@@ -126,63 +126,61 @@
   .who .meta { font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
   .who .acts { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 
-  /* ===== Report table ===== */
-  .rt { display: grid; grid-template-columns: 170px minmax(0, 1fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
-  .rt > div { border-top: 1px solid var(--line); min-width: 0; }
-  .rt > .h { border-top: 0; background: var(--head); padding: 10px 14px; font-weight: 700; font-size: 13.5px; display: flex; align-items: baseline; gap: 6px 8px; flex-wrap: wrap; }
+  /* ===== Report table — 시트와 같은 모양: 구분 | 지난주 과업 | 비고 | 이번주 과업 | 비고 ===== */
+  .rt { display: grid; grid-template-columns: 140px minmax(0, 1.35fr) minmax(0, .8fr) minmax(0, 1.35fr) minmax(0, .8fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .rt > div { border-top: 1px solid var(--line); border-right: 1px solid var(--line-2); min-width: 0; }
+  .rt > div.c-nnote, .rt > div.c-dec, .rt > .h:nth-child(5) { border-right: 0; }
+  .rt > .c-lnote { border-right: 1px solid var(--line); }
+  .rt > .h { border-top: 0; background: var(--head); padding: 10px 12px; font-weight: 700; font-size: 13.5px; display: flex; align-items: baseline; gap: 6px 8px; flex-wrap: wrap; }
   .rt > .h small { font-weight: 400; color: var(--muted); font-size: 12px; }
   .rt > .h .sum { margin-left: auto; font-weight: 500; font-size: 12.5px; color: var(--text-2); }
-  .rt .c-cat { background: var(--surface-2); padding: 10px 12px; border-right: 1px solid var(--line); position: relative; }
-  .rt .c-last { border-right: 1px solid var(--line); }
-  .rt .c-last, .rt .c-next, .rt .c-dec { padding: 6px 12px 8px; }
-  .cat-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
-  .cat-in { width: 100%; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 6px; margin: -3px -6px; outline: none; }
-  .cat-in:hover { border-color: var(--line); background: var(--surface); }
-  .cat-in:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .rt > .h.note { color: var(--text-2); font-weight: 500; }
+  .rt .c-cat { background: var(--surface-2); padding: 10px 12px; position: relative; }
+  .rt .c-last, .rt .c-next, .rt .c-lnote, .rt .c-nnote, .rt .c-dec { padding: 8px 10px 10px; }
+  .rt .c-lnote, .rt .c-nnote { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+  .cat-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; white-space: pre-line; }
+  textarea.cat-in { width: 100%; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 6px; margin: -3px -6px; outline: none; resize: none; overflow: hidden; line-height: 1.45; }
+  textarea.cat-in:hover { border-color: var(--line); background: var(--surface); }
+  textarea.cat-in:focus { border-color: var(--accent); background: var(--surface); box-shadow: 0 0 0 3px var(--accent-soft); }
   .row-del { margin-top: 8px; border: 0; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; padding: 0; opacity: 0; }
   .c-cat:hover .row-del, .c-cat:focus-within .row-del { opacity: 1; }
   .row-del:hover { color: var(--red); }
-  .rt .c-dec-h { background: var(--mention); color: var(--mention-text); padding: 10px 12px; font-weight: 700; border-right: 1px solid var(--line); }
+  .rt .c-dec-h { background: var(--mention); color: var(--mention-text); padding: 10px 12px; font-weight: 700; }
   .rt .c-dec-h small { display: block; font-weight: 400; font-size: 11.5px; opacity: .85; margin-top: 2px; }
-  .rt .c-dec { grid-column: 2 / 4; background: color-mix(in srgb, var(--mention) 28%, var(--surface)); }
+  .rt .c-dec { grid-column: 2 / 6; background: color-mix(in srgb, var(--mention) 28%, var(--surface)); }
 
-  .items { display: grid; }
-  .it { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 6px; align-items: start; padding: 2px 0; }
-  .it .b { width: 5px; height: 5px; border-radius: 50%; background: var(--muted); margin-top: 11px; }
-  .it textarea { width: 100%; resize: none; overflow: hidden; font-size: 14px; line-height: 1.55; color: var(--text); background: transparent; border: 0; padding: 3px 4px; min-height: 28px; outline: none; border-radius: 5px; }
-  .it textarea:focus { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--accent); }
-  .it textarea::placeholder { color: var(--muted); }
-  .it .tx { padding: 3px 4px; overflow-wrap: anywhere; }
-  .it .tools { display: inline-flex; align-items: center; gap: 4px; padding-top: 3px; flex-wrap: wrap; justify-content: flex-end; }
+  /* 여러 줄 입력칸 (시트 셀 하나 = 입력칸 하나) */
+  textarea.cell { width: 100%; resize: none; overflow: hidden; font-size: 13.5px; line-height: 1.6; color: var(--text); background: transparent; border: 1px solid transparent; padding: 4px 6px; min-height: 64px; outline: none; border-radius: 6px; display: block; }
+  textarea.cell:hover { border-color: var(--line-2); }
+  textarea.cell:focus { background: var(--surface); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  textarea.cell::placeholder { color: var(--muted); }
+  textarea.cell.note { font-size: 13px; color: var(--text-2); min-height: 48px; }
+  .tx { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13.5px; line-height: 1.6; padding: 4px 6px; }
+  .tx.note { font-size: 13px; color: var(--text-2); }
+  .meta-strip { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; padding: 0 6px; }
+  .meta-strip .lb { font-size: 11.5px; color: var(--muted); }
 
   /* 진행률 */
   .pg { border-radius: 12px; padding: 0 8px; font-size: 12px; font-weight: 700; line-height: 20px; white-space: nowrap; border: 1px solid transparent; }
   .pg.p100 { background: var(--green-soft); color: var(--green); }
   .pg.pmid { background: var(--blue-soft); color: var(--blue); }
   .pg.plow { background: var(--orange-soft); color: var(--orange); }
+  .pg.pnone { background: var(--surface-3); color: var(--muted); font-weight: 500; }
   select.pg { appearance: none; -webkit-appearance: none; cursor: pointer; padding: 0 18px 0 8px; height: 22px;
     background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-position: right 9px top 9px, right 5px top 9px; background-size: 4px 4px; background-repeat: no-repeat; }
   select.pg:hover, select.pg:focus { border-color: currentColor; outline: none; }
   select.pg option { color: var(--text); background: var(--surface); font-weight: 400; }
-  .it.full .tx, .it.full textarea { color: var(--muted); }
 
   /* 비용 */
   .won { font-size: 12px; font-weight: 700; color: var(--money); background: var(--money-soft); border-radius: 4px; padding: 0 6px; line-height: 20px; white-space: nowrap; }
-  .cost { width: 74px; height: 22px; border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; font-size: 12px; font-weight: 700; color: var(--money); background: var(--surface); text-align: right; outline: none; }
-  .cost::placeholder { color: var(--muted); font-weight: 400; text-align: right; }
+  .cost { width: 84px; height: 22px; border: 1px solid var(--line); border-radius: 5px; padding: 0 6px; font-size: 12px; font-weight: 700; color: var(--money); background: var(--surface); text-align: right; outline: none; }
+  .cost::placeholder { color: var(--muted); font-weight: 400; }
   .cost:focus { border-color: var(--money); box-shadow: 0 0 0 2px var(--money-soft); }
   .cost:not(:focus):not(:placeholder-shown) { background: var(--money-soft); border-color: transparent; }
-  .cost:placeholder-shown:not(:focus) { opacity: 0; }
-  .it:hover .cost, .it:focus-within .cost { opacity: 1; }
-  .it:has(textarea:placeholder-shown) .tools > :not(.del):not(.cost) { visibility: hidden; }
 
   .stale { font-size: 11px; font-weight: 700; color: var(--mention-text); background: var(--mention); padding: 0 6px; border-radius: 4px; white-space: nowrap; line-height: 20px; }
-  .del { border: 0; background: transparent; color: var(--muted); cursor: pointer; width: 20px; height: 22px; font-size: 14px; opacity: 0; }
-  .it:hover .del, .it:focus-within .del { opacity: 1; }
-  .del:hover { color: var(--red); }
-  .add { margin: 2px 0 0 18px; }
-  .cell-empty { color: var(--muted); font-size: 13px; padding: 4px; font-style: italic; }
+  .cell-empty { color: var(--muted); font-size: 13px; padding: 4px 6px; }
   .table-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
   .hint { font-size: 12px; color: var(--muted); }
 
@@ -264,18 +262,16 @@
     .ov-row .nm { grid-column: 1 / -1; }
     .rt { display: block; }
     .rt > .h { display: none; }
-    .rt .c-cat, .rt .c-dec-h { border-right: 0; padding: 9px 12px; }
-    .rt .c-last { border-right: 0; }
-    .rt .c-last::before, .rt .c-next::before { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 4px 0 2px; }
-    .rt .c-last::before { content: "지난주 과업 · " attr(data-sum); }
-    .rt .c-next::before { content: "이번주 과업 · " attr(data-sum); }
-    .rt .c-next { border-top: 1px dashed var(--line); }
+    .rt > div { border-right: 0; }
+    .rt .c-cat, .rt .c-dec-h { padding: 9px 12px; }
+    .rt .c-last::before, .rt .c-next::before, .rt .c-lnote::before, .rt .c-nnote::before { display: block; font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 2px 6px 2px; }
+    .rt .c-last::before { content: "지난주 과업"; }
+    .rt .c-lnote::before { content: "지난주 비고"; }
+    .rt .c-next::before { content: "이번주 과업"; }
+    .rt .c-nnote::before { content: "이번주 비고"; }
+    .rt .c-lnote, .rt .c-nnote { border-top: 1px dashed var(--line); }
     .rt .c-cat .row-del { opacity: 1; margin: 0; position: absolute; right: 12px; top: 10px; }
     .who .acts { margin-left: 0; width: 100%; }
-    .it { grid-template-columns: 12px minmax(0, 1fr); }
-    .it .tools { grid-column: 2; justify-content: flex-start; padding: 0 0 4px 4px; }
-    .cost:placeholder-shown:not(:focus) { opacity: 1; }
-    .del { opacity: 1; }
   }
 </style>
 </head>
@@ -361,7 +357,8 @@
                                                  teams:[{team,progress,lastCost,nextCost,submitted,total}],
                                                  members:[{email,status,progress,lastCost,nextCost,decisions}],
                                                  totals:{progress,lastCost,nextCost,decisionCost} }
-     report = { rows:[{ cat, last:[{text, progress(0~100), cost}], next:[{text, cost}] }], decisions:[{text, cost}], updatedAt }
+     report = { rows:[{ r(시트 행), cat(업무구분), last:{text, progress(0~100|null), cost, note(비고)}, next:{같은 형태} }],
+                decision:{ r, text, cost, note }|null, updatedAt }
      ========================================================= */
 
   var TZ = "Asia/Seoul", WD = ["일", "월", "화", "수", "목", "금", "토"];
@@ -381,7 +378,6 @@
   }
   function cacheSetCur() { if (state.cur && state.sel && state.sel !== OVERVIEW) RCACHE[ckey(state.week, state.sel)] = { t: Date.now(), d: JSON.parse(JSON.stringify(state.cur)) }; }
   var OVERVIEW = "__overview__";
-  var NEW_LAST_PROGRESS = 100;   // 직접 추가한 '지난주 과업' 기본 진행률 (이월 항목은 서버에서 0%)
 
   /* ---------- 유틸 ---------- */
   function $(id) { return document.getElementById(id); }
@@ -425,20 +421,20 @@
   }
   function won(n) { return n ? "₩" + wonShort(n) : "₩0"; }
   function pgCls(p) { return p >= 100 ? "p100" : p >= 50 ? "pmid" : "plow"; }
-  function clampPg(p) { p = Math.round((+p || 0) / 10) * 10; return Math.max(0, Math.min(100, p)); }
+  function clampPg(p) { p = Math.round(+p || 0); return Math.max(0, Math.min(100, p)); }
 
-  function lastItems(r) { var o = []; (r.rows || []).forEach(function (x) { (x.last || []).forEach(function (i) { if (String(i.text || "").trim()) o.push(i); }); }); return o; }
-  function nextItems(r) { var o = []; (r.rows || []).forEach(function (x) { (x.next || []).forEach(function (i) { if (String(i.text || "").trim()) o.push(i); }); }); return o; }
-  function decItems(r) { return (r.decisions || []).filter(function (d) { return String(d.text || "").trim(); }); }
+  function sideEmpty() { return { text: "", progress: null, cost: 0, note: "" }; }
+  function hasText(s) { return !!String(s || "").trim(); }
   function stats(r) {
-    var L = lastItems(r), N = nextItems(r), D = decItems(r);
-    var sum = function (a) { return a.reduce(function (s, i) { return s + (+i.cost || 0); }, 0); };
-    return { progress: L.length ? Math.round(L.reduce(function (s, i) { return s + clampPg(i.progress); }, 0) / L.length) : null,
-      lastCost: sum(L), nextCost: sum(N), decCost: sum(D), nLast: L.length, nNext: N.length, nDec: D.length };
+    var rows = (r && r.rows) || [];
+    var prog = rows.filter(function (g) { return hasText(g.last.text) && g.last.progress !== null && g.last.progress !== undefined; }).map(function (g) { return g.last.progress; });
+    var sum = function (k) { return rows.reduce(function (s, g) { return s + (+g[k].cost || 0); }, 0); };
+    return { progress: prog.length ? Math.round(prog.reduce(function (a, b) { return a + b; }, 0) / prog.length) : null, progList: prog,
+      lastCost: sum("last"), nextCost: sum("next"), decCost: r && r.decision ? +r.decision.cost || 0 : 0 };
   }
-  function hasContent(r) { return !!r && (nextItems(r).length > 0 || decItems(r).length > 0); }
+  function hasContent(r) { return !!r && ((r.rows || []).some(function (g) { return hasText(g.next.text); }) || !!(r.decision && hasText(r.decision.text))); }
+  function decisionLines(d) { return d && d.text ? String(d.text).split("\n").map(function (l) { return l.trim(); }).filter(Boolean) : []; }
   function lastSumText(s) { return "평균 진행률 " + (s.progress == null ? "-" : s.progress + "%") + (s.lastCost ? " · 집행 " + won(s.lastCost) : ""); }
-  function nextSumText(s) { return s.nextCost ? "예상 비용 " + won(s.nextCost) : "예상 비용 없음"; }
 
   /* ---------- 구글 로그인 (Google Identity Services) ---------- */
   var Auth = (function () {
@@ -652,7 +648,7 @@
     var acts = '<div class="acts">' + (!edit && c.fileUrl ? '<a class="btn" href="' + esc(c.fileUrl) + '" target="_blank" rel="noopener">시트 열기 ↗</a>' : "") + "</div>";
     $("app").innerHTML = whoHtml(m, meta) + acts + "</div>" + tableHtml(r, edit) +
       (edit ? '<div class="table-acts"><button class="btn" type="button" id="addRow">+ 업무 구분 추가</button>' +
-        '<span class="hint">진행률은 10% 단위 · 금액은 "30만", "1.2억", "300000" 모두 입력 가능 · Enter 다음 항목 · Ctrl+S 저장</span></div>' : "");
+        '<span class="hint">칸 안에서 Enter = 줄바꿈 · 금액은 "30만", "1.2억", "300000" 모두 입력 가능 · Ctrl+S 저장</span></div>' : "");
     $("savebar").hidden = !edit;
     if (edit) {
       $("sheetLink").hidden = !c.fileUrl; if (c.fileUrl) $("sheetLink").href = c.fileUrl;
@@ -672,87 +668,89 @@
     var w = weekObj(state.week), pw = state.cur.prevWeek || { start: addD(w.start, -7), end: addD(w.end, -7) };
     var stale = state.cur.stale || {}, s = stats(r);
     var h = '<div class="rt" id="rt">' +
-      '<div class="h">구분</div>' +
+      '<div class="h">업무구분</div>' +
       '<div class="h">지난주 과업 <small>' + mdShort(pw.start) + "~" + mdShort(pw.end) + '</small><span class="sum" id="sumLast">' + lastSumText(s) + "</span></div>" +
-      '<div class="h">이번주 과업 <small>' + mdShort(w.start) + "~" + mdShort(w.end) + '</small><span class="sum" id="sumNext">' + nextSumText(s) + "</span></div>";
-    var rows = r.rows && r.rows.length ? r.rows : [{ cat: "", last: [], next: [] }];
-    rows.forEach(function (row, i) {
-      h += '<div class="c-cat" data-row="' + i + '">' +
-        (edit ? '<input class="cat-in" type="text" value="' + esc(row.cat) + '" placeholder="업무 구분" aria-label="업무 구분">' +
+      '<div class="h note">비고</div>' +
+      '<div class="h">이번주 과업 <small>' + mdShort(w.start) + "~" + mdShort(w.end) + "</small></div>" +
+      '<div class="h note">비고</div>';
+    var rows = r.rows && r.rows.length ? r.rows : [{ r: null, cat: "", last: sideEmpty(), next: sideEmpty() }];
+    rows.forEach(function (g, i) {
+      var weeks = stale[norm(g.cat)] || 0;
+      h += '<div class="c-cat" data-row="' + i + '" data-r="' + (g.r || "") + '">' +
+        (edit ? '<textarea class="cat-in" rows="1" placeholder="업무구분" aria-label="업무구분">' + esc(g.cat) + "</textarea>" +
           '<button class="row-del" type="button" data-delrow="' + i + '">구분 삭제</button>'
-          : '<div class="cat-name">' + esc(row.cat || "-") + "</div>") + "</div>";
-      h += '<div class="c-last" data-row="' + i + '" data-sum="' + esc(lastSumText(stats({ rows: [row] }))) + '"><div class="items" data-kind="last">' + itemsHtml(row.last, "last", edit, stale) + "</div>" + (edit ? addBtn("last") : "") + "</div>";
-      h += '<div class="c-next" data-row="' + i + '" data-sum="' + esc(nextSumText(stats({ rows: [row] }))) + '"><div class="items" data-kind="next">' + itemsHtml(row.next, "next", edit) + "</div>" + (edit ? addBtn("next") : "") + "</div>";
+          : '<div class="cat-name">' + esc(g.cat || "-") + "</div>") + "</div>";
+      h += '<div class="c-last" data-row="' + i + '">' + cellHtml(g.last, "last", edit, weeks) + "</div>";
+      h += '<div class="c-lnote" data-row="' + i + '">' + noteHtml(g.last.note, edit) + "</div>";
+      h += '<div class="c-next" data-row="' + i + '">' + cellHtml(g.next, "next", edit, 0) + "</div>";
+      h += '<div class="c-nnote" data-row="' + i + '">' + noteHtml(g.next.note, edit) + "</div>";
     });
-    h += '<div class="c-dec-h">대표님 결정 필요<small>승인·판단이 필요한 일과 금액</small></div><div class="c-dec"><div class="items" data-kind="dec">' + itemsHtml(r.decisions, "dec", edit) + "</div>" + (edit ? addBtn("dec") : "") + "</div>";
+    var d = r.decision || { text: "", cost: 0, note: "" };
+    h += '<div class="c-dec-h">대표님 결정 필요<small>승인·판단이 필요한 일과 금액</small></div>' +
+      '<div class="c-dec">' + (edit
+        ? '<textarea class="cell" id="decText" rows="2" placeholder="대표님 판단·승인이 필요한 일 (한 줄에 하나)">' + esc(d.text) + "</textarea>" +
+          '<div class="meta-strip"><span class="lb">관련 금액</span><input class="cost num" id="decCost" type="text" inputmode="decimal" value="' + esc(wonShort(d.cost)) + '" placeholder="₩ 금액"></div>'
+        : (hasText(d.text) ? '<div class="tx">' + esc(d.text) + "</div>" + (d.cost ? '<div class="meta-strip"><span class="won num">' + won(d.cost) + "</span></div>" : "") : '<div class="cell-empty">없음</div>')) + "</div>";
     return h + "</div>";
   }
-  function addBtn(kind) { return '<button class="btn link add" type="button" data-additem="' + kind + '">+ 추가</button>'; }
-  function blankItem(kind) { return kind === "last" ? { text: "", progress: NEW_LAST_PROGRESS, cost: 0 } : { text: "", cost: 0 }; }
-  function itemsHtml(list, kind, edit, stale) {
-    list = (list || []).map(function (x) { return typeof x === "string" ? { text: x, cost: 0 } : x; });
-    if (!edit) {
-      var l = list.filter(function (x) { return String(x.text || "").trim(); });
-      if (!l.length) return '<div class="cell-empty">' + (kind === "dec" ? "없음" : "-") + "</div>";
-      return l.map(function (x) { return itemHtml(kind, x, false, stale); }).join("");
-    }
-    if (!list.length) list = [blankItem(kind)];
-    return list.map(function (x) { return itemHtml(kind, x, true, stale); }).join("");
-  }
   var PG_OPTS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-  function itemHtml(kind, x, edit, stale) {
-    var text = x.text || "", cost = +x.cost || 0, pg = kind === "last" ? clampPg(x.progress) : null;
-    var weeks = kind === "last" && pg < 100 && stale ? stale[norm(text)] : 0;
-    var tools = "";
-    if (kind === "last") {
-      tools += '<span class="stale"' + (weeks >= 2 ? "" : " hidden") + ">" + (weeks || 0) + "주째</span>";
-      tools += edit
-        ? '<select class="pg ' + pgCls(pg) + '" aria-label="진행률">' + PG_OPTS.map(function (v) { return '<option value="' + v + '"' + (v === pg ? " selected" : "") + ">" + v + "%</option>"; }).join("") + "</select>"
-        : '<span class="pg ' + pgCls(pg) + '">' + pg + "%</span>";
-    }
-    var costLabel = kind === "last" ? "집행 금액" : kind === "next" ? "예상 비용" : "금액";
-    if (edit) tools += '<input class="cost num" type="text" inputmode="decimal" value="' + esc(wonShort(cost)) + '" placeholder="₩ 금액" aria-label="' + costLabel + '" title="' + costLabel + '">';
-    else if (cost) tools += '<span class="won num" title="' + costLabel + '">' + won(cost) + "</span>";
-    if (edit) tools += '<button class="del" type="button" aria-label="항목 삭제">×</button>';
-    return '<div class="it' + (pg === 100 ? " full" : "") + '" data-stale="' + (weeks || 0) + '"><span class="b"></span>' +
-      (edit ? '<textarea rows="1" placeholder="' + (kind === "dec" ? "대표님 판단·승인이 필요한 일" : "내용 입력") + '">' + esc(text) + "</textarea>" : '<div class="tx">' + esc(text) + "</div>") +
-      '<span class="tools">' + tools + "</span></div>";
+  function pgSelect(p) {
+    var opts = PG_OPTS.slice(); if (p !== null && p !== undefined && opts.indexOf(p) < 0) { opts.push(p); opts.sort(function (a, b) { return a - b; }); }
+    return '<select class="pg ' + (p === null || p === undefined ? "pnone" : pgCls(p)) + '" aria-label="진행률"><option value=""' + (p === null || p === undefined ? " selected" : "") + ">진행률 -</option>" +
+      opts.map(function (v) { return '<option value="' + v + '"' + (v === p ? " selected" : "") + ">" + v + "%</option>"; }).join("") + "</select>";
   }
-  function autosize(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }
+  function cellHtml(sd, kind, edit, staleWeeks) {
+    sd = sd || sideEmpty();
+    var costLabel = kind === "last" ? "집행" : "예상";
+    var p = sd.progress === undefined ? null : sd.progress;
+    if (edit) {
+      return '<textarea class="cell" rows="3" placeholder="' + (kind === "last" ? "지난주에 진행한 일 (여러 줄 가능)" : "이번주에 할 일 (여러 줄 가능)") + '">' + esc(sd.text) + "</textarea>" +
+        '<div class="meta-strip">' + pgSelect(p) +
+        '<span class="lb">' + costLabel + '</span><input class="cost num" type="text" inputmode="decimal" value="' + esc(wonShort(sd.cost)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액">' +
+        (staleWeeks >= 2 && p !== null && p < 100 ? '<span class="stale">' + staleWeeks + "주째</span>" : "") + "</div>";
+    }
+    if (!hasText(sd.text) && p === null && !sd.cost) return '<div class="cell-empty">-</div>';
+    var chips = (p !== null ? '<span class="pg ' + pgCls(p) + '">' + p + "%</span>" : "") +
+      (sd.cost ? '<span class="won num" title="' + costLabel + '">' + costLabel + " " + won(sd.cost) + "</span>" : "") +
+      (staleWeeks >= 2 && p !== null && p < 100 ? '<span class="stale">' + staleWeeks + "주째</span>" : "");
+    return (hasText(sd.text) ? '<div class="tx">' + esc(sd.text) + "</div>" : "") + (chips ? '<div class="meta-strip">' + chips + "</div>" : "");
+  }
+  function noteHtml(note, edit) {
+    if (edit) return '<textarea class="cell note" rows="2" placeholder="비고">' + esc(note) + "</textarea>";
+    return hasText(note) ? '<div class="tx note">' + esc(note) + "</div>" : '<div class="cell-empty"></div>';
+  }
+  function autosize(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
 
-  function readItem(it, kind) {
-    var o = { text: it.querySelector("textarea").value.trim(), cost: parseWon(it.querySelector(".cost").value) };
-    if (kind === "last") o.progress = clampPg(it.querySelector("select.pg").value);
-    return o;
+  function readSide(cell, noteCell) {
+    var sel = cell.querySelector("select.pg").value;
+    return { text: cell.querySelector("textarea").value.replace(/\s+$/, ""), progress: sel === "" ? null : clampPg(sel),
+      cost: parseWon(cell.querySelector(".cost").value), note: noteCell.querySelector("textarea").value.replace(/\s+$/, "") };
   }
   function domRows() {
     var rt = $("rt"), out = [];
     Array.prototype.forEach.call(rt.querySelectorAll(".c-cat"), function (cc) {
-      var i = cc.dataset.row;
-      out.push({ cat: cc.querySelector(".cat-in").value.trim(),
-        last: Array.prototype.map.call(rt.querySelectorAll('.c-last[data-row="' + i + '"] .it'), function (it) { return readItem(it, "last"); }),
-        next: Array.prototype.map.call(rt.querySelectorAll('.c-next[data-row="' + i + '"] .it'), function (it) { return readItem(it, "next"); }) });
+      var i = cc.dataset.row, q = function (c) { return rt.querySelector("." + c + '[data-row="' + i + '"]'); };
+      out.push({ r: cc.dataset.r ? +cc.dataset.r : null, cat: cc.querySelector(".cat-in").value.replace(/\s+$/, ""),
+        last: readSide(q("c-last"), q("c-lnote")), next: readSide(q("c-next"), q("c-nnote")) });
     });
     return out;
   }
+  function readDecision() {
+    var t = $("decText"); if (!t) return state.cur.report.decision;
+    var old = state.cur.report.decision || {};
+    return { r: old.r || null, text: t.value.replace(/\s+$/, ""), cost: parseWon($("decCost").value), note: old.note || "" };
+  }
   function collect() {
     var rt = $("rt"); if (!rt) return state.cur.report;
-    var rows = domRows().map(function (r) {
-      return { cat: r.cat, last: r.last.filter(function (x) { return x.text; }), next: r.next.filter(function (x) { return x.text; }) };
-    }).filter(function (r) { return r.cat || r.last.length || r.next.length; });
-    var decisions = Array.prototype.map.call(rt.querySelectorAll('[data-kind="dec"] .it'), function (it) { return readItem(it, "dec"); }).filter(function (x) { return x.text; });
-    var r = state.cur.report; r.rows = rows; r.decisions = decisions;
+    var r = state.cur.report;
+    r.rows = domRows().filter(function (g) { return g.r || hasText(g.cat) || hasText(g.last.text) || hasText(g.next.text) || hasText(g.last.note) || hasText(g.next.note); });
+    r.decision = readDecision();
     return r;
   }
   function updateSums() {
-    var r = collect(), s = stats(r);
-    $("sumLast").textContent = lastSumText(s); $("sumNext").textContent = nextSumText(s);
+    var s = stats(collect());
+    $("sumLast").textContent = lastSumText(s);
     var ws = $("whoStats"); if (ws) ws.textContent = whoStats(s);
-    domRows().forEach(function (row, i) {
-      var l = document.querySelector('.c-last[data-row="' + i + '"]'), n = document.querySelector('.c-next[data-row="' + i + '"]');
-      var st = stats({ rows: [{ last: row.last.filter(function (x) { return x.text; }), next: row.next.filter(function (x) { return x.text; }) }] });
-      if (l) l.dataset.sum = lastSumText(st); if (n) n.dataset.sum = nextSumText(st);
-    });
   }
   function markDirty() { if (!state.dirty) { state.dirty = true; setSaveStatus(); } }
   function setSaveStatus() {
@@ -774,7 +772,9 @@
         else { state.dirty = false; delete RCACHE[ckey(state.week, state.sel)]; select(state.sel, true); }
         return;
       }
-      state.dirty = false; r.updatedAt = res.savedAt; state.cur.version = res.version; cacheSetCur();
+      state.dirty = false; state.cur.version = res.version;
+      if (res.report) { state.cur.report = res.report; r = res.report; rerenderTable(); }   // 새로 추가한 업무구분의 시트 행 번호 반영
+      r.updatedAt = res.savedAt; state.cur.report.updatedAt = res.savedAt; cacheSetCur();
       setSaveStatus(); toast("✅ 시트에 저장했습니다");
       var ok = hasContent(r), p = $("subPill"); if (p) { p.className = "pill " + (ok ? "ok" : "warn"); p.textContent = ok ? "제출" : "미작성"; }
       state.statuses[state.boot.me.email] = ok ? "submitted" : "empty"; renderNav();
@@ -786,38 +786,23 @@
   app.addEventListener("input", function (e) {
     var t = e.target;
     if (t.tagName === "TEXTAREA") autosize(t);
-    if (t.matches("textarea, .cat-in, .cost")) markDirty();
-    if (t.matches(".cost, textarea")) updateSums();
+    if (t.matches("textarea, .cost")) { markDirty(); if (t.matches(".cost")) updateSums(); }
   });
   app.addEventListener("change", function (e) {
     var t = e.target;
     if (t.matches("select.pg")) {
-      var v = clampPg(t.value), it = t.closest(".it");
-      t.className = "pg " + pgCls(v);
-      it.classList.toggle("full", v === 100);
-      var sb = it.querySelector(".stale"); if (sb) sb.hidden = v === 100 || +it.dataset.stale < 2;
+      t.className = "pg " + (t.value === "" ? "pnone" : pgCls(clampPg(t.value)));
       updateSums(); markDirty();
     }
   });
   app.addEventListener("focusout", function (e) {
     var t = e.target;
-    if (t.matches && t.matches(".cost")) { var n = parseWon(t.value); t.value = wonShort(n); }
+    if (t.matches && t.matches(".cost")) { t.value = wonShort(parseWon(t.value)); }
+    if (t.matches && t.matches("textarea.cell, textarea.cat-in")) updateSums();
   });
   app.addEventListener("keydown", function (e) {
     var t = e.target;
-    if (t.matches && t.matches(".cost") && e.key === "Enter") { e.preventDefault(); t.blur(); return; }
-    if (t.tagName !== "TEXTAREA" || e.isComposing || e.keyCode === 229) return;
-    var it = t.closest(".it"), box = it.parentNode, kind = box.dataset.kind;
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      it.insertAdjacentHTML("afterend", itemHtml(kind, blankItem(kind), true));
-      it.nextElementSibling.querySelector("textarea").focus(); markDirty();
-    } else if (e.key === "Backspace" && !t.value && box.children.length > 1) {
-      e.preventDefault();
-      var prev = it.previousElementSibling || it.nextElementSibling; it.remove();
-      var pt = prev.querySelector("textarea"); pt.focus(); pt.setSelectionRange(pt.value.length, pt.value.length);
-      updateSums(); markDirty();
-    }
+    if (t.matches && t.matches(".cost") && e.key === "Enter") { e.preventDefault(); t.blur(); }
   });
   app.addEventListener("click", function (e) {
     var t = e.target;
@@ -830,22 +815,9 @@
       }).catch(function (err) { t.disabled = false; t.textContent = "다시 시도"; toast("생성 실패: " + errMsg(err)); });
       return;
     }
-    var del = t.closest(".del");
-    if (del) {
-      var it = del.closest(".it"), box = it.parentNode;
-      if (box.children.length > 1) it.remove();
-      else { it.querySelector("textarea").value = ""; it.querySelector(".cost").value = ""; }
-      updateSums(); markDirty(); return;
-    }
-    var add = t.closest("[data-additem]");
-    if (add) {
-      var bx = add.previousElementSibling, k = bx.dataset.kind;
-      bx.insertAdjacentHTML("beforeend", itemHtml(k, blankItem(k), true));
-      bx.lastElementChild.querySelector("textarea").focus(); return;
-    }
     if (t.id === "addRow") {
-      var rows = domRows(); rows.push({ cat: "", last: [], next: [] });
-      state.cur.report.rows = rows; state.cur.report.decisions = collectDecisions();
+      var rows = domRows(); rows.push({ r: null, cat: "", last: sideEmpty(), next: sideEmpty() });
+      state.cur.report.rows = rows; state.cur.report.decision = readDecision();
       rerenderTable(); markDirty();
       var ins = document.querySelectorAll(".cat-in"); ins[ins.length - 1].focus(); return;
     }
@@ -853,15 +825,12 @@
     if (dr) {
       var i = +dr.dataset.delrow, cats = document.querySelectorAll(".c-cat");
       var catName = cats[i] ? cats[i].querySelector(".cat-in").value.trim() : "";
-      if (!confirm("'" + (catName || "이름 없음") + "' 구분을 삭제할까요?")) return;
+      if (!confirm("'" + (catName || "이름 없음") + "' 업무구분을 삭제할까요?\n시트에서도 이 칸의 내용이 지워집니다 (칸 모양은 유지).")) return;
       state.cur.report.rows = domRows().filter(function (_, j) { return j !== i; });
-      state.cur.report.decisions = collectDecisions();
+      state.cur.report.decision = readDecision();
       rerenderTable(); updateSums(); markDirty(); return;
     }
   });
-  function collectDecisions() {
-    return Array.prototype.map.call(document.querySelectorAll('[data-kind="dec"] .it'), function (it) { return readItem(it, "dec"); });
-  }
   function rerenderTable() {
     $("rt").outerHTML = tableHtml(state.cur.report, true);
     Array.prototype.forEach.call(document.querySelectorAll(".rt textarea"), autosize);
@@ -880,26 +849,33 @@
   var STATUS_LABEL = { submitted: '<span class="pill ok">제출</span>', empty: '<span class="pill warn">미작성</span>', no_tab: '<span class="pill warn">탭 없음</span>',
     no_file: '<span class="pill n">파일 없음</span>', no_access: '<span class="pill n">권한 없음</span>' };
   /* 받아 둔 6명 보고서로 전체 현황 계산 (서버 getOverview와 같은 결과) — 다 있으면 서버 요청 없이 즉시 표시 */
-  function overviewFromCache(week) {
-    var ms = state.boot.members, teams = state.boot.teams, list = [];
-    for (var i = 0; i < ms.length; i++) { var c = cacheGetReport(week, ms[i].email); if (!c) return null; list.push(c); }
+  function overviewCalc(ms, teams, getRp) {
     var res = { total: ms.length, submitted: 0, missing: [], decisions: [], members: [], teams: [], totals: {} };
-    var team = {}, all = { items: [], lastCost: 0, nextCost: 0, decisionCost: 0 };
-    function avg(a) { return a.length ? Math.round(a.reduce(function (s, x) { return s + clampPg(x.progress); }, 0) / a.length) : null; }
-    ms.forEach(function (m, i) {
-      var rp = list[i], r = rp.report || { rows: [], decisions: [] }, st = stats(r), L = lastItems(r);
+    var team = {}, all = { prog: [], lastCost: 0, nextCost: 0, decisionCost: 0 };
+    function avg(a) { return a.length ? Math.round(a.reduce(function (x, y) { return x + y; }, 0) / a.length) : null; }
+    ms.forEach(function (m) {
+      var rp = getRp(m), r = rp.report || { rows: [], decision: null }, st = stats(r);
       var status = rp.noFile ? "no_file" : !rp.exists ? "no_tab" : hasContent(r) ? "submitted" : "empty";
       if (status === "submitted") res.submitted++; else res.missing.push(m.email);
       res.members.push({ email: m.email, status: status, progress: st.progress, lastCost: st.lastCost, nextCost: st.nextCost });
-      var t = team[m.team] = team[m.team] || { team: m.team, items: [], lastCost: 0, nextCost: 0, submitted: 0, total: 0 };
-      t.items = t.items.concat(L); t.lastCost += st.lastCost; t.nextCost += st.nextCost; t.total++; if (status === "submitted") t.submitted++;
-      all.items = all.items.concat(L); all.lastCost += st.lastCost; all.nextCost += st.nextCost;
-      decItems(r).forEach(function (d) { res.decisions.push({ email: m.email, text: d.text, cost: d.cost }); all.decisionCost += +d.cost || 0; });
+      var t = team[m.team] = team[m.team] || { team: m.team, prog: [], lastCost: 0, nextCost: 0, submitted: 0, total: 0 };
+      t.prog = t.prog.concat(st.progList); t.lastCost += st.lastCost; t.nextCost += st.nextCost; t.total++; if (status === "submitted") t.submitted++;
+      all.prog = all.prog.concat(st.progList); all.lastCost += st.lastCost; all.nextCost += st.nextCost;
+      if (r.decision && hasText(r.decision.text)) {
+        decisionLines(r.decision).forEach(function (line, i) { res.decisions.push({ email: m.email, text: line, cost: i === 0 ? +r.decision.cost || 0 : 0 }); });
+        all.decisionCost += +r.decision.cost || 0;
+      }
     });
     var order = teams.concat(Object.keys(team).filter(function (t) { return teams.indexOf(t) < 0; }));
-    res.teams = order.filter(function (t) { return team[t]; }).map(function (t) { var x = team[t]; return { team: t, progress: avg(x.items), lastCost: x.lastCost, nextCost: x.nextCost, submitted: x.submitted, total: x.total }; });
-    res.totals = { progress: avg(all.items), lastCost: all.lastCost, nextCost: all.nextCost, decisionCost: all.decisionCost };
+    res.teams = order.filter(function (t) { return team[t]; }).map(function (t) { var x = team[t]; return { team: t, progress: avg(x.prog), lastCost: x.lastCost, nextCost: x.nextCost, submitted: x.submitted, total: x.total }; });
+    res.totals = { progress: avg(all.prog), lastCost: all.lastCost, nextCost: all.nextCost, decisionCost: all.decisionCost };
     return res;
+  }
+  /* 받아 둔 6명 보고서로 전체 현황 계산 (서버 getOverview와 같은 결과) — 다 있으면 서버 요청 없이 즉시 표시 */
+  function overviewFromCache(week) {
+    var ms = state.boot.members, got = {};
+    for (var i = 0; i < ms.length; i++) { var c = cacheGetReport(week, ms[i].email); if (!c) return null; got[ms[i].email] = c; }
+    return overviewCalc(ms, state.boot.teams, function (m) { return got[m.email]; });
   }
 
   function loadOverview() {
@@ -961,76 +937,63 @@
       { email: "demo6@example.com", name: "정다은", title: "팀장", team: "개발팀" }
     ];
     var me = MEMBERS[2];
+    // 업무구분별 [지난주 과업, 이번주 과업] — 시트처럼 한 칸에 여러 줄
     var PLAN = {
-      "demo1@example.com": { "경영": [["분기 실적 리뷰 (예시)"], ["분기 목표 점검 (예시)"], ["연간 계획 초안 (예시)"]],
-        "대외 협력": [["협력사 미팅 2건 (예시)"], ["협력사 제안 검토 (예시)"], ["협력사 제안 검토 (예시)"]] },
-      "demo2@example.com": { "운영": [["월간 운영 회의 준비 (예시)"], ["업무 매뉴얼 정리 (예시)"], ["업무 매뉴얼 정리 (예시)"]],
-        "총무": [["비품 구매 (예시)"], ["사무실 환경 개선 검토 (예시)"], ["비품 재고 점검 (예시)"]] },
-      "demo3@example.com": { "사내 시스템": [["주간보고 화면 개선 (예시)", "대시보드 데이터 연결 (예시)"], ["주간보고 화면 시안 (예시)"], ["자동화 스크립트 정리 (예시)"]],
-        "문서": [["보고서 양식 통일 (예시)"], ["회의록 정리 (예시)"], ["회의록 정리 (예시)"]] },
-      "demo4@example.com": { "사업": [["고객 인터뷰 3건 (예시)"], ["고객 인터뷰 준비 (예시)"], ["시장 조사 (예시)"]],
-        "교육": [["설명회 자료 준비 (예시)"], ["설명회 자료 준비 (예시)"], ["교육 일정 수립 (예시)"]] },
-      "demo5@example.com": { "영업": [["견적서 회신 받기 (예시)", "신규 리드 연락 (예시)"], ["견적서 회신 받기 (예시)", "전시회 참가 신청 (예시)"], ["견적서 회신 받기 (예시)"]],
-        "제안": [["제안서 전달 (예시)"], ["제안서 작성 (예시)"], ["제안 미팅 (예시)"]] },
-      "demo6@example.com": { "개발": [["결제 기능 연동 (예시)", "PDF 출력 개선 (예시)"], ["결제 기능 연동 (예시)"], ["결제 기능 연동 (예시)"]],
-        "품질": [["테스트 케이스 확장 (예시)"], ["테스트 케이스 확장 (예시)"], ["배포 점검 (예시)"]] }
+      "demo1@example.com": [["경영", "분기 실적 리뷰 (예시)\n연간 계획 초안 (예시)", "분기 목표 점검 (예시)"], ["대외\n협력", "협력사 미팅 2건 (예시)", "협력사 제안 검토 (예시)"]],
+      "demo2@example.com": [["운영", "월간 운영 회의 준비 (예시)", "업무 매뉴얼 정리 (예시)"], ["총무", "비품 구매 (예시)", "비품 재고 점검 (예시)"]],
+      "demo3@example.com": [["사내\n시스템", "주간보고 화면 개선 (예시)\n대시보드 데이터 연결 (예시)", "자동화 스크립트 정리 (예시)"], ["문서", "보고서 양식 통일 (예시)", "회의록 정리 (예시)"]],
+      "demo4@example.com": [["사업", "고객 인터뷰 3건 (예시)", "시장 조사 (예시)"], ["교육", "설명회 자료 준비 (예시)", "교육 일정 수립 (예시)"]],
+      "demo5@example.com": [["영업", "견적서 회신 받기 (예시)\n신규 리드 연락 (예시)", "견적서 회신 받기 (예시)\n전시회 참가 신청 (예시)"], ["제안", "제안서 전달 (예시)", "제안 미팅 (예시)"]],
+      "demo6@example.com": [["개발", "결제 기능 연동 (예시)\nPDF 출력 개선 (예시)", "결제 기능 연동 (예시)"], ["품질", "테스트 케이스 확장 (예시)", "배포 점검 (예시)"]]
     };
-    var COST = { "협력사 미팅 2건 (예시)": 100000, "전시회 참가 신청 (예시)": 1000000, "설명회 자료 준비 (예시)": 200000, "결제 기능 연동 (예시)": 300000,
-      "고객 인터뷰 3건 (예시)": 90000, "비품 구매 (예시)": 150000, "테스트 케이스 확장 (예시)": 100000 };
+    var PROG = { "영업": [20, 10, 0], "개발": [70, 50, 30] };   // 몇 주째 안 끝난 예시
     var DECISIONS = {
-      "demo5@example.com": [{ text: "견적 할인 폭 승인 여부 (예시)", cost: 300000 }],
-      "demo6@example.com": [{ text: "외부 서비스 유료 플랜 전환 여부 (예시)", cost: 200000 }],
-      "demo4@example.com": [{ text: "설명회 장소 예산 승인 (예시)", cost: 200000 }]
+      "demo5@example.com": { text: "견적 할인 폭 승인 여부 (예시)", cost: 300000 },
+      "demo6@example.com": { text: "외부 서비스 유료 플랜 전환 여부 (예시)\n테스트 서버 증설 (예시)", cost: 200000 },
+      "demo4@example.com": { text: "설명회 장소 예산 승인 (예시)", cost: 200000 }
     };
-    var STUCK = { "견적서 회신 받기 (예시)": [20, 10, 0], "결제 기능 연동 (예시)": [70, 50, 30] };
-    function pick(arr, w, cat) { return w < arr.length ? arr[w] : [cat + " 정기 업무 (" + WEEKS[Math.min(w, WEEKS.length - 1)].label + ")"]; }
     function hash(s) { var c = 0; for (var i = 0; i < s.length; i++) c = (c * 31 + s.charCodeAt(i)) % 997; return c; }
+    function clone(o) { return JSON.parse(JSON.stringify(o)); }
     var STORE = {};
     MEMBERS.forEach(function (m) {
       STORE[m.email] = {};
       for (var w = 11; w >= 0; w--) {
-        var rows = Object.keys(PLAN[m.email]).map(function (cat) {
-          var arr = PLAN[m.email][cat], next = pick(arr, w, cat), prev = pick(arr, w + 1, cat);
-          var last = prev.map(function (t) {
-            var again = next.some(function (n) { return norm(n) === norm(t); });
-            var st = STUCK[norm(t)] || STUCK[t];
-            var p = again ? (st ? st[Math.min(w, st.length - 1)] : [30, 50, 70, 80][hash(t + w) % 4]) : (hash(t) % 5 === 0 ? 90 : 100);
-            var c = COST[t] ? Math.round(COST[t] * Math.min(p, 100) / 100 / 1000) * 1000 : 0;
-            return { text: t, progress: p, cost: c };
-          });
-          return { cat: cat, last: last, next: next.map(function (t) { return { text: t, cost: COST[t] || 0 }; }) };
+        var rows = PLAN[m.email].map(function (g, gi) {
+          var st = PROG[g[0]], p = st ? (w < st.length ? st[w] : 100) : [100, 100, 80, 50, 100, 90][hash(g[0] + w) % 6];
+          var lc = hash(g[1] + w) % 4 === 0 ? 100000 + (hash(g[0]) % 5) * 50000 : 0, nc = hash(g[2] + w) % 3 === 0 ? 150000 : 0;
+          return { r: 5 + gi * 3, cat: g[0],
+            last: { text: g[1], progress: p, cost: lc, note: p < 100 && w % 2 === 0 ? "다음 주 이어서 진행 (예시)" : "" },
+            next: { text: g[2], progress: null, cost: nc, note: gi === 0 && w === 0 ? "외부 일정 확인 필요 (예시)" : "" } };
         });
-        STORE[m.email][WEEKS[w].key] = { rows: rows, decisions: w === 0 ? (DECISIONS[m.email] || []).slice() : (w === 1 && DECISIONS[m.email] ? [{ text: "(지난주) " + DECISIONS[m.email][0].text, cost: DECISIONS[m.email][0].cost }] : []),
+        var d = DECISIONS[m.email];
+        STORE[m.email][WEEKS[w].key] = { rows: rows, decision: w <= 1 && d ? { r: 20, text: (w ? "(지난주) " : "") + d.text, cost: d.cost, note: "" } : null,
           updatedAt: addD(WEEKS[w].start, 4) + " 17:" + pad(10 + w * 3), v: 1 };
       }
     });
     delete STORE[me.email][cur.key];
     var sl = STORE["demo5@example.com"][cur.key];
-    sl.rows.forEach(function (r) { r.next = []; r.last.forEach(function (i) { i.progress = 0; i.cost = 0; }); }); sl.decisions = []; sl.updatedAt = "";
+    sl.rows.forEach(function (g) { g.next = { text: "", progress: null, cost: 0, note: "" }; g.last.progress = 0; g.last.cost = 0; g.last.note = ""; }); sl.decision = null; sl.updatedAt = "";
 
     function wi(k) { for (var i = 0; i < WEEKS.length; i++) if (WEEKS[i].key === k) return i; return -1; }
     function prevKey(k) { var i = wi(k); return i >= 0 && i + 1 < WEEKS.length ? WEEKS[i + 1].key : null; }
     function status(email, k) { var r = STORE[email][k]; return !r ? "no_tab" : hasContent(r) ? "submitted" : "empty"; }
-    function staleMap(email, k) {
+    function openCats(r) { var o = {}; r.rows.forEach(function (g) { if (hasText(g.last.text) && g.last.progress !== null && g.last.progress < 100) o[norm(g.cat)] = true; }); return o; }
+    function staleMap(email, k) {   // Code.gs staleFrom_과 같은 규칙: 업무구분별 연속 미완료 주 수
       var out = {}, r = STORE[email][k]; if (!r) return out;
-      r.rows.forEach(function (row) { row.last.forEach(function (it) {
-        if (it.progress >= 100) return;
+      Object.keys(openCats(r)).forEach(function (c) {
         var n = 1, pk = prevKey(k);
-        while (pk) {
-          var pr = STORE[email][pk], hit = null;
-          if (pr) pr.rows.forEach(function (x) { x.last.forEach(function (y) { if (norm(y.text) === norm(it.text)) hit = y; }); });
-          if (!hit || hit.progress >= 100) break; n++; pk = prevKey(pk);
-        }
-        out[norm(it.text)] = n;
-      }); });
+        while (pk && STORE[email][pk] && openCats(STORE[email][pk])[c]) { n++; pk = prevKey(pk); }
+        out[c] = n;
+      });
       return out;
     }
     function report(email, k) {
       var m = MEMBERS.filter(function (x) { return x.email === email; })[0], w = WEEKS[wi(k)], r = STORE[email][k];
       return { member: m, access: email === me.email ? "edit" : "view", exists: !!r, noFile: false,
-        tabName: k, fileUrl: "https://docs.google.com/spreadsheets/", prevWeek: { start: addD(w.start, -7), end: addD(w.end, -7) },
-        report: r ? { rows: r.rows, decisions: r.decisions, updatedAt: r.updatedAt } : null, version: r ? String(r.v) : null, stale: staleMap(email, k) };
+        tabName: w.label, fileUrl: "https://docs.google.com/spreadsheets/", prevWeek: { start: addD(w.start, -7), end: addD(w.end, -7) },
+        report: r ? clone({ rows: r.rows, decision: r.decision, updatedAt: r.updatedAt }) : null, version: r ? String(r.v) : null, stale: staleMap(email, k) };
     }
+    var nextR = 100;
     return {
       members: MEMBERS,
       setMe: function (e) { MEMBERS.forEach(function (m) { if (m.email === e) me = m; }); },
@@ -1049,35 +1012,23 @@
       },
       createMyReport: function (k) {
         var pk = prevKey(k), prev = pk ? STORE[me.email][pk] : null;
-        STORE[me.email][k] = { rows: prev ? prev.rows.map(function (r) { return { cat: r.cat, last: r.next.map(function (t) { return { text: t.text, progress: 0, cost: 0 }; }), next: [] }; }) : [{ cat: "", last: [], next: [] }],
-          decisions: [], updatedAt: "", v: 1 };
+        STORE[me.email][k] = { rows: prev ? prev.rows.map(function (g) {
+            return { r: g.r, cat: g.cat, last: { text: g.next.text, progress: hasText(g.next.text) ? 0 : null, cost: 0, note: "" }, next: { text: "", progress: null, cost: 0, note: "" } }; })
+          : [{ r: 5, cat: "", last: { text: "", progress: null, cost: 0, note: "" }, next: { text: "", progress: null, cost: 0, note: "" } }],
+          decision: null, updatedAt: "", v: 1 };
         return report(me.email, k);
       },
       saveMyReport: function (k, r, base) {
         var cur2 = STORE[me.email][k];
         if (base != null && cur2 && String(cur2.v) !== String(base)) return { ok: false, conflict: true, message: "다른 곳에서 먼저 수정되었습니다." };
         var at = kstNow(), v = (cur2 ? cur2.v : 0) + 1;
-        STORE[me.email][k] = { rows: r.rows, decisions: r.decisions, updatedAt: at, v: v };
-        return { ok: true, savedAt: at, version: String(v) };
+        var rows = clone(r.rows).filter(function (g) { return norm(g.cat) !== "대표님 결정 필요"; });
+        rows.forEach(function (g) { if (!g.r) g.r = nextR++; });
+        var dec = r.decision && (hasText(r.decision.text) || r.decision.cost) ? clone(r.decision) : null;
+        STORE[me.email][k] = { rows: rows, decision: dec, updatedAt: at, v: v };
+        return { ok: true, savedAt: at, version: String(v), report: clone({ rows: rows, decision: dec, updatedAt: at }) };
       },
-      getOverview: function (k) {
-        var miss = [], decs = [], sub = 0, mem = [], team = {}, tot = { items: [], lastCost: 0, nextCost: 0, decisionCost: 0 };
-        MEMBERS.forEach(function (m) {
-          var s0 = status(m.email, k), r = STORE[m.email][k];
-          if (s0 === "submitted") sub++; else miss.push(m.email);
-          var st = r ? stats(r) : { progress: null, lastCost: 0, nextCost: 0, decCost: 0 };
-          var L = r ? lastItems(r) : [];
-          mem.push({ email: m.email, status: s0, progress: st.progress, lastCost: st.lastCost, nextCost: st.nextCost });
-          var t = team[m.team] = team[m.team] || { team: m.team, items: [], lastCost: 0, nextCost: 0, submitted: 0, total: 0 };
-          t.items = t.items.concat(L); t.lastCost += st.lastCost; t.nextCost += st.nextCost; t.total++; if (s0 === "submitted") t.submitted++;
-          tot.items = tot.items.concat(L); tot.lastCost += st.lastCost; tot.nextCost += st.nextCost;
-          if (r) decItems(r).forEach(function (d) { decs.push({ email: m.email, text: d.text, cost: d.cost }); tot.decisionCost += +d.cost || 0; });
-        });
-        function avg(a) { return a.length ? Math.round(a.reduce(function (s, i) { return s + clampPg(i.progress); }, 0) / a.length) : null; }
-        return { total: MEMBERS.length, submitted: sub, missing: miss, decisions: decs, members: mem,
-          teams: TEAMS.filter(function (t) { return team[t]; }).map(function (t) { var x = team[t]; return { team: t, progress: avg(x.items), lastCost: x.lastCost, nextCost: x.nextCost, submitted: x.submitted, total: x.total }; }),
-          totals: { progress: avg(tot.items), lastCost: tot.lastCost, nextCost: tot.nextCost, decisionCost: tot.decisionCost } };
-      }
+      getOverview: function (k) { return overviewCalc(MEMBERS, TEAMS, function (m) { return report(m.email, k); }); }
     };
   })();
 
