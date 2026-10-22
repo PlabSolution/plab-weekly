@@ -181,6 +181,33 @@
 
   .stale { font-size: 11px; font-weight: 700; color: var(--mention-text); background: var(--mention); padding: 0 6px; border-radius: 4px; white-space: nowrap; line-height: 20px; }
   .cell-empty { color: var(--muted); font-size: 13px; padding: 4px 6px; }
+  /* ■ 소제목 묶음 */
+  .secs { display: flex; flex-direction: column; gap: 4px; }
+  .sec-blk { border: 1px solid var(--line-2); border-radius: 8px; background: var(--surface); }
+  .sec-hd { display: flex; align-items: center; gap: 6px; padding: 5px 8px; flex-wrap: wrap; min-height: 32px; }
+  button.sec-tg { border: 0; background: transparent; cursor: pointer; padding: 0; display: inline-flex; align-items: center; gap: 6px; text-align: left; font-size: 13.5px; font-weight: 700; color: var(--text); flex: 1 1 140px; min-width: 0; }
+  .sec-tg .chev, .sec-hd .chev { width: 16px; flex: none; color: var(--muted); transition: transform .15s; display: inline-block; text-align: center; font-size: 11px; }
+  .sec-blk.open .chev { transform: rotate(90deg); }
+  .sec-tg .tt { overflow-wrap: anywhere; }
+  .sec-tg .cnt, .sec-hd .cnt { font-weight: 400; color: var(--muted); font-size: 12px; white-space: nowrap; }
+  .sec-body { display: none; padding: 0 8px 8px 30px; }
+  .sec-blk.open .sec-body { display: block; }
+  .sec-body .tx { padding: 0; }
+  button.chev-btn { border: 0; background: transparent; cursor: pointer; padding: 0; display: inline-flex; color: var(--muted); }
+  input.sec-title { flex: 1 1 140px; min-width: 0; font-weight: 700; font-size: 13.5px; border: 1px solid transparent; border-radius: 5px; padding: 2px 6px; background: transparent; outline: none; color: var(--text); }
+  input.sec-title:hover { border-color: var(--line); }
+  input.sec-title:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: var(--surface); }
+  .sec-opt { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 11px; font-size: 11.5px; padding: 0 8px; line-height: 20px; cursor: pointer; white-space: nowrap; }
+  .sec-opt:hover { color: var(--text-2); border-color: var(--text-2); }
+  .sec-x { border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0 2px; opacity: .6; }
+  .sec-x:hover { color: var(--red); opacity: 1; }
+  .sec-tools { display: flex; align-items: center; gap: 4px 6px; flex-wrap: wrap; padding: 0 8px 6px 30px; }
+  .sec-hd .sec-del { font-size: 11.5px; }
+  .sec-blk .sec-body textarea.cell { min-height: 40px; }
+  .sec-add { margin-top: 2px; align-self: flex-start; border: 0; background: transparent; color: var(--accent); font-size: 12.5px; cursor: pointer; padding: 2px 6px; font-weight: 600; }
+  .sec-add:hover { text-decoration: underline; }
+  textarea.cell.pre { min-height: 40px; }
+  .auto { font-size: 11px; color: var(--muted); }
   .table-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }
   .hint { font-size: 12px; color: var(--muted); }
 
@@ -419,9 +446,49 @@
     if (n >= 1e4) { var m = n / 1e4; return (m >= 100 ? Math.round(m).toLocaleString("ko-KR") : (Math.round(m * 10) / 10).toString()) + "만"; }
     return n.toLocaleString("ko-KR");
   }
+  /* 입력칸용: 줄여도 값이 같을 때만 '30만'처럼, 아니면 49,750 그대로 (다시 저장해도 금액이 바뀌지 않게) */
+  function wonInput(n) { n = Math.round(+n || 0); var sh = wonShort(n); return parseWon(sh) === n ? sh : n ? n.toLocaleString("ko-KR") : ""; }
   function won(n) { return n ? "₩" + wonShort(n) : "₩0"; }
   function pgCls(p) { return p >= 100 ? "p100" : p >= 50 ? "pmid" : "plow"; }
   function clampPg(p) { p = Math.round(+p || 0); return Math.max(0, Math.min(100, p)); }
+
+  /* ■ 소제목 — '■ 제목 · 진행 60% · 집행 ₩109,260' (Code.gs sections_와 같은 규칙) */
+  var SEC_PG_RE = /\s*·\s*진행\s*(\d{1,3})\s*%\s*$/, SEC_COST_RE = /\s*·\s*(?:집행|예상|금액)\s*₩?\s*([\d,]+)\s*원?\s*$/;
+  function parseSections(text) {
+    var pre = [], secs = [], cur = null;
+    String(text || "").split("\n").forEach(function (ln) {
+      var m = /^\s*■\s?(.*)$/.exec(ln);
+      if (m) {
+        var t = m[1], prog = null, cost = null, hit = true;
+        while (hit) {
+          hit = false;
+          var a = SEC_PG_RE.exec(t); if (a) { prog = clampPg(+a[1]); t = t.slice(0, a.index); hit = true; continue; }
+          var b = SEC_COST_RE.exec(t); if (b) { cost = +b[1].replace(/,/g, ""); t = t.slice(0, b.index); hit = true; }
+        }
+        cur = { title: t.trim(), progress: prog, cost: cost, body: [] }; secs.push(cur);
+      } else (cur ? cur.body : pre).push(ln);
+    });
+    var trim = function (a) { return a.join("\n").replace(/^\s*\n/, "").replace(/\s+$/, ""); };
+    return { pre: trim(pre), secs: secs.map(function (x) { x.body = trim(x.body); return x; }) };
+  }
+  function buildSections(pre, secs, kind) {
+    var word = kind === "next" ? "예상" : "집행", out = [];
+    if (hasText(pre)) out.push(pre.replace(/\s+$/, ""));
+    secs.forEach(function (x) {
+      var h = "■ " + x.title.trim() + (x.progress !== null ? " · 진행 " + x.progress + "%" : "") + (x.cost !== null ? " · " + word + " ₩" + (+x.cost || 0).toLocaleString("en-US") : "");
+      out.push(h + (hasText(x.body) ? "\n" + x.body.replace(/\s+$/, "") : ""));
+    });
+    return out.join("\n\n");
+  }
+  function secTotals(secs) {
+    var pg = secs.filter(function (x) { return x.progress !== null; }).map(function (x) { return x.progress; });
+    var cs = secs.filter(function (x) { return x.cost !== null; });
+    return { progress: pg.length ? Math.round(pg.reduce(function (a, b) { return a + b; }, 0) / pg.length) : null, hasPg: pg.length > 0,
+      cost: cs.reduce(function (a, x) { return a + (+x.cost || 0); }, 0), hasCost: cs.length > 0 };
+  }
+  function lineCount(t) { return String(t || "").split("\n").filter(function (l) { return l.trim(); }).length; }
+  var OPEN = {};   // 펼친 소제목 기억 (화면을 다시 그려도 유지)
+  var ALL_OPEN = false;
 
   function sideEmpty() { return { text: "", progress: null, cost: 0, note: "" }; }
   function hasText(s) { return !!String(s || "").trim(); }
@@ -645,10 +712,10 @@
     var meta = '<span class="pill ' + (ok ? "ok" : "warn") + '" id="subPill">' + (ok ? "제출" : "미작성") + "</span>" +
       '<span id="whoStats">' + whoStats(s) + "</span>" +
       (r.updatedAt ? "<span>· 최종 저장 " + esc(r.updatedAt) + "</span>" : "");
-    var acts = '<div class="acts">' + (!edit && c.fileUrl ? '<a class="btn" href="' + esc(c.fileUrl) + '" target="_blank" rel="noopener">시트 열기 ↗</a>' : "") + "</div>";
+    var acts = '<div class="acts"><button class="btn" type="button" id="toggleAll">' + (ALL_OPEN ? "소제목 모두 접기" : "소제목 모두 펼치기") + "</button>" + (!edit && c.fileUrl ? '<a class="btn" href="' + esc(c.fileUrl) + '" target="_blank" rel="noopener">시트 열기 ↗</a>' : "") + "</div>";
     $("app").innerHTML = whoHtml(m, meta) + acts + "</div>" + tableHtml(r, edit) +
       (edit ? '<div class="table-acts"><button class="btn" type="button" id="addRow">+ 업무 구분 추가</button>' +
-        '<span class="hint">칸 안에서 Enter = 줄바꿈 · 금액은 "30만", "1.2억", "300000" 모두 입력 가능 · Ctrl+S 저장</span></div>' : "");
+        '<span class="hint">■ 소제목을 누르면 펼쳐짐 · 소제목마다 진행률/금액을 넣으면 업무구분 진행률(평균)·금액(합계)이 자동 계산 · 금액은 "30만", "1.2억", "300000" 모두 입력 가능 · Ctrl+S 저장</span></div>' : "");
     $("savebar").hidden = !edit;
     if (edit) {
       $("sheetLink").hidden = !c.fileUrl; if (c.fileUrl) $("sheetLink").href = c.fileUrl;
@@ -680,16 +747,16 @@
         (edit ? '<textarea class="cat-in" rows="1" placeholder="업무구분" aria-label="업무구분">' + esc(g.cat) + "</textarea>" +
           '<button class="row-del" type="button" data-delrow="' + i + '">구분 삭제</button>'
           : '<div class="cat-name">' + esc(g.cat || "-") + "</div>") + "</div>";
-      h += '<div class="c-last" data-row="' + i + '">' + cellHtml(g.last, "last", edit, weeks) + "</div>";
+      h += '<div class="c-last" data-row="' + i + '">' + cellHtml(g.last, "last", edit, weeks, i) + "</div>";
       h += '<div class="c-lnote" data-row="' + i + '">' + noteHtml(g.last.note, edit) + "</div>";
-      h += '<div class="c-next" data-row="' + i + '">' + cellHtml(g.next, "next", edit, 0) + "</div>";
+      h += '<div class="c-next" data-row="' + i + '">' + cellHtml(g.next, "next", edit, 0, i) + "</div>";
       h += '<div class="c-nnote" data-row="' + i + '">' + noteHtml(g.next.note, edit) + "</div>";
     });
     var d = r.decision || { text: "", cost: 0, note: "" };
     h += '<div class="c-dec-h">대표님 결정 필요<small>승인·판단이 필요한 일과 금액</small></div>' +
       '<div class="c-dec">' + (edit
         ? '<textarea class="cell" id="decText" rows="2" placeholder="대표님 판단·승인이 필요한 일 (한 줄에 하나)">' + esc(d.text) + "</textarea>" +
-          '<div class="meta-strip"><span class="lb">관련 금액</span><input class="cost num" id="decCost" type="text" inputmode="decimal" value="' + esc(wonShort(d.cost)) + '" placeholder="₩ 금액"></div>'
+          '<div class="meta-strip"><span class="lb">관련 금액</span><input class="cost num" id="decCost" type="text" inputmode="decimal" value="' + esc(wonInput(d.cost)) + '" placeholder="₩ 금액"></div>'
         : (hasText(d.text) ? '<div class="tx">' + esc(d.text) + "</div>" + (d.cost ? '<div class="meta-strip"><span class="won num">' + won(d.cost) + "</span></div>" : "") : '<div class="cell-empty">없음</div>')) + "</div>";
     return h + "</div>";
   }
@@ -699,21 +766,68 @@
     return '<select class="pg ' + (p === null || p === undefined ? "pnone" : pgCls(p)) + '" aria-label="진행률"><option value=""' + (p === null || p === undefined ? " selected" : "") + ">진행률 -</option>" +
       opts.map(function (v) { return '<option value="' + v + '"' + (v === p ? " selected" : "") + ">" + v + "%</option>"; }).join("") + "</select>";
   }
-  function cellHtml(sd, kind, edit, staleWeeks) {
+  function secKey(row, kind, i) { return state.sel + "|" + state.week + "|" + row + "|" + kind + "|" + i; }
+  function isOpen(k) { return ALL_OPEN || !!OPEN[k]; }
+  function cellHtml(sd, kind, edit, staleWeeks, row) {
     sd = sd || sideEmpty();
-    var costLabel = kind === "last" ? "집행" : "예상";
-    var p = sd.progress === undefined ? null : sd.progress;
-    if (edit) {
-      return '<textarea class="cell" rows="3" placeholder="' + (kind === "last" ? "지난주에 진행한 일 (여러 줄 가능)" : "이번주에 할 일 (여러 줄 가능)") + '">' + esc(sd.text) + "</textarea>" +
-        '<div class="meta-strip">' + pgSelect(p) +
-        '<span class="lb">' + costLabel + '</span><input class="cost num" type="text" inputmode="decimal" value="' + esc(wonShort(sd.cost)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액">' +
-        (staleWeeks >= 2 && p !== null && p < 100 ? '<span class="stale">' + staleWeeks + "주째</span>" : "") + "</div>";
-    }
+    var ps = parseSections(sd.text);
+    return edit ? cellEditHtml(ps, sd, kind, staleWeeks, row) : cellViewHtml(ps, sd, kind, staleWeeks, row);
+  }
+  function chipPg(p) { return p === null || p === undefined ? "" : '<span class="pg ' + pgCls(p) + '">' + p + "%</span>"; }
+  function chipWon(c, label) { return c ? '<span class="won num" title="' + label + '">' + label + " " + won(c) + "</span>" : ""; }
+  function staleChip(w, p) { return w >= 2 && p !== null && p !== undefined && p < 100 ? '<span class="stale">' + w + "주째</span>" : ""; }
+
+  function cellViewHtml(ps, sd, kind, staleWeeks, row) {
+    var costLabel = kind === "last" ? "집행" : "예상", p = sd.progress === undefined ? null : sd.progress;
     if (!hasText(sd.text) && p === null && !sd.cost) return '<div class="cell-empty">-</div>';
-    var chips = (p !== null ? '<span class="pg ' + pgCls(p) + '">' + p + "%</span>" : "") +
-      (sd.cost ? '<span class="won num" title="' + costLabel + '">' + costLabel + " " + won(sd.cost) + "</span>" : "") +
-      (staleWeeks >= 2 && p !== null && p < 100 ? '<span class="stale">' + staleWeeks + "주째</span>" : "");
-    return (hasText(sd.text) ? '<div class="tx">' + esc(sd.text) + "</div>" : "") + (chips ? '<div class="meta-strip">' + chips + "</div>" : "");
+    var h = hasText(ps.pre) ? '<div class="tx">' + esc(ps.pre) + "</div>" : "";
+    if (ps.secs.length) {
+      h += '<div class="secs">' + ps.secs.map(function (x, i) {
+        var k = secKey(row, kind, i), n = lineCount(x.body);
+        return '<div class="sec-blk' + (isOpen(k) && n ? " open" : "") + '" data-k="' + esc(k) + '"><div class="sec-hd">' +
+          '<button class="sec-tg" type="button"' + (n ? "" : " disabled") + '><span class="chev">' + (n ? "▶" : "•") + '</span><span class="tt">' + esc(x.title || "(제목 없음)") + "</span>" +
+          (n ? '<span class="cnt">' + n + "줄</span>" : "") + "</button>" + chipPg(x.progress) + chipWon(x.cost, costLabel) + "</div>" +
+          (n ? '<div class="sec-body"><div class="tx">' + esc(x.body) + "</div></div>" : "") + "</div>";
+      }).join("") + "</div>";
+    }
+    var t = secTotals(ps.secs);
+    var chips = chipPg(p) + (t.hasPg ? '<span class="auto">평균</span>' : "") + chipWon(sd.cost, costLabel) + (t.hasCost ? '<span class="auto">합계</span>' : "") + staleChip(staleWeeks, p);
+    return h + (chips ? '<div class="meta-strip">' + chips + "</div>" : "");
+  }
+
+  function secEditHtml(x, kind, k) {
+    var costLabel = kind === "last" ? "집행" : "예상", n = lineCount(x.body);
+    return '<div class="sec-blk' + (isOpen(k) ? " open" : "") + '" data-k="' + esc(k) + '"><div class="sec-hd">' +
+      '<button class="chev-btn" type="button" title="펼치기/접기"><span class="chev">▶</span></button>' +
+      '<input class="sec-title" type="text" value="' + esc(x.title) + '" placeholder="소제목" aria-label="소제목">' +
+      '<span class="cnt">' + (n ? n + "줄" : "") + "</span>" +
+      '<button class="sec-x sec-del" type="button" data-secdel title="소제목 삭제">삭제</button></div>' +
+      '<div class="sec-tools">' +
+      (x.progress !== null ? pgSelect(x.progress).replace('class="pg ', 'class="pg sec-pg ') + '<button class="sec-x" type="button" data-off="pg" title="진행률 빼기">×</button>'
+        : '<button class="sec-opt" type="button" data-on="pg">+ 진행률</button>') +
+      (x.cost !== null ? '<input class="cost num sec-cost" type="text" inputmode="decimal" value="' + esc(wonInput(x.cost)) + '" placeholder="₩ ' + costLabel + '" aria-label="' + costLabel + ' 금액"><button class="sec-x" type="button" data-off="cost" title="금액 빼기">×</button>'
+        : '<button class="sec-opt" type="button" data-on="cost">+ ' + costLabel + "금액</button>") +
+      "</div>" +
+      '<div class="sec-body"><textarea class="cell sec-body-in" rows="2" placeholder="내용 (여러 줄 가능)">' + esc(x.body) + "</textarea></div></div>";
+  }
+  function cellEditHtml(ps, sd, kind, staleWeeks, row) {
+    var costLabel = kind === "last" ? "집행" : "예상";
+    var h = "";
+    if (hasText(ps.pre) || !ps.secs.length)
+      h += '<textarea class="cell pre" rows="' + (ps.secs.length ? 2 : 3) + '" placeholder="' + (kind === "last" ? "지난주에 진행한 일 (여러 줄 가능)" : "이번주에 할 일 (여러 줄 가능)") + '">' + esc(ps.pre) + "</textarea>";
+    h += '<div class="secs">' + ps.secs.map(function (x, i) { return secEditHtml(x, kind, secKey(row, kind, i)); }).join("") +
+      '<button class="sec-add" type="button">+ ■ 소제목 추가</button></div>';
+    return h + '<div class="meta-strip cell-meta">' + metaHtml(ps, sd, kind, staleWeeks) + "</div>";
+  }
+  function metaHtml(ps, sd, kind, staleWeeks) {
+    var costLabel = kind === "last" ? "집행" : "예상", t = secTotals(ps.secs);
+    var p = t.hasPg ? t.progress : sd.progress === undefined ? null : sd.progress;
+    var c = t.hasCost ? t.cost : sd.cost;
+    return (t.hasPg ? chipPg(p) + '<span class="auto" title="소제목 진행률 평균 (자동)">평균</span>' : pgSelect(p).replace('class="pg ', 'class="pg cell-pg ')) +
+      '<span class="lb">' + costLabel + "</span>" +
+      (t.hasCost ? '<span class="won num">' + won(c) + '</span><span class="auto" title="소제목 금액 합계 (자동)">합계</span>'
+        : '<input class="cost num cell-cost" type="text" inputmode="decimal" value="' + esc(wonInput(c)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액">') +
+      staleChip(staleWeeks, p);
   }
   function noteHtml(note, edit) {
     if (edit) return '<textarea class="cell note" rows="2" placeholder="비고">' + esc(note) + "</textarea>";
@@ -721,11 +835,32 @@
   }
   function autosize(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
 
-  function readSide(cell, noteCell) {
-    var sel = cell.querySelector("select.pg").value;
-    return { text: cell.querySelector("textarea").value.replace(/\s+$/, ""), progress: sel === "" ? null : clampPg(sel),
-      cost: parseWon(cell.querySelector(".cost").value), note: noteCell.querySelector("textarea").value.replace(/\s+$/, "") };
+  function readSecs(cell) {
+    return Array.prototype.map.call(cell.querySelectorAll(".sec-blk"), function (b) {
+      var sel = b.querySelector("select.sec-pg"), ci = b.querySelector(".sec-cost");
+      return { title: b.querySelector(".sec-title").value, progress: sel && sel.value !== "" ? clampPg(sel.value) : null,
+        cost: ci ? parseWon(ci.value) : null, body: b.querySelector(".sec-body-in").value };
+    });
   }
+  function readSide(cell, noteCell) {
+    var kind = cell.classList.contains("c-next") ? "next" : "last";
+    var preEl = cell.querySelector("textarea.pre"), secs = readSecs(cell), t = secTotals(secs);
+    var sel = cell.querySelector("select.cell-pg"), ci = cell.querySelector(".cell-cost");
+    return { text: buildSections(preEl ? preEl.value : "", secs, kind),
+      progress: t.hasPg ? t.progress : sel && sel.value !== "" ? clampPg(sel.value) : null,
+      cost: t.hasCost ? t.cost : ci ? parseWon(ci.value) : 0,
+      note: noteCell.querySelector("textarea").value.replace(/\s+$/, "") };
+  }
+  /* 칸 하나만 다시 그림 (소제목 추가·삭제, 진행률/금액 켜고 끄기, 직접 ■를 입력했을 때) */
+  function rerenderCell(cell, focusSel) {
+    var i = +cell.dataset.row, kind = cell.classList.contains("c-next") ? "next" : "last";
+    var noteCell = $("rt").querySelector((kind === "next" ? ".c-nnote" : ".c-lnote") + '[data-row="' + i + '"]');
+    var sd = readSide(cell, noteCell), stale = kind === "last" ? (state.cur.stale || {})[norm(domCat(i))] || 0 : 0;
+    cell.innerHTML = cellHtml(sd, kind, true, stale, i);
+    Array.prototype.forEach.call(cell.querySelectorAll("textarea"), autosize);
+    if (focusSel) { var f = cell.querySelector(focusSel); if (f) f.focus(); }
+  }
+  function domCat(i) { var c = $("rt").querySelector('.c-cat[data-row="' + i + '"] .cat-in'); return c ? c.value : ""; }
   function domRows() {
     var rt = $("rt"), out = [];
     Array.prototype.forEach.call(rt.querySelectorAll(".c-cat"), function (cc) {
@@ -791,14 +926,26 @@
   app.addEventListener("change", function (e) {
     var t = e.target;
     if (t.matches("select.pg")) {
-      t.className = "pg " + (t.value === "" ? "pnone" : pgCls(clampPg(t.value)));
+      var extra = t.classList.contains("sec-pg") ? " sec-pg" : t.classList.contains("cell-pg") ? " cell-pg" : "";
+      t.className = "pg" + extra + " " + (t.value === "" ? "pnone" : pgCls(clampPg(t.value)));
+      if (extra === " sec-pg") refreshMeta(t.closest(".c-last, .c-next"));
+      if (extra === " sec-pg" && t.value === "") rerenderCell(t.closest(".c-last, .c-next"));
       updateSums(); markDirty();
     }
   });
+  function refreshMeta(cell) {
+    if (!cell) return;
+    var i = +cell.dataset.row, kind = cell.classList.contains("c-next") ? "next" : "last";
+    var noteCell = $("rt").querySelector((kind === "next" ? ".c-nnote" : ".c-lnote") + '[data-row="' + i + '"]');
+    var sd = readSide(cell, noteCell), stale = kind === "last" ? (state.cur.stale || {})[norm(domCat(i))] || 0 : 0;
+    cell.querySelector(".cell-meta").innerHTML = metaHtml(parseSections(sd.text), sd, kind, stale);
+  }
   app.addEventListener("focusout", function (e) {
     var t = e.target;
-    if (t.matches && t.matches(".cost")) { t.value = wonShort(parseWon(t.value)); }
-    if (t.matches && t.matches("textarea.cell, textarea.cat-in")) updateSums();
+    if (t.matches && t.matches(".cost")) { t.value = wonInput(parseWon(t.value)); if (t.matches(".sec-cost")) refreshMeta(t.closest(".c-last, .c-next")); }
+    // 칸 안에 직접 '■ ...' 줄을 쓰면 소제목 묶음으로 바꿔 줌
+    if (t.matches && t.matches("textarea.pre, textarea.sec-body-in") && /(^|\n)\s*■/.test(t.value)) rerenderCell(t.closest(".c-last, .c-next"));
+    if (t.matches && t.matches("textarea.cell, textarea.cat-in, input.sec-title")) updateSums();
   });
   app.addEventListener("keydown", function (e) {
     var t = e.target;
@@ -807,6 +954,55 @@
   app.addEventListener("click", function (e) {
     var t = e.target;
     var g = t.closest("[data-go]"); if (g) { select(g.dataset.go); return; }
+    if (t.closest("#toggleAll")) {
+      ALL_OPEN = !ALL_OPEN; if (!ALL_OPEN) OPEN = {};
+      Array.prototype.forEach.call(document.querySelectorAll(".rt .sec-blk"), function (b) { if (b.querySelector(".sec-body")) b.classList.toggle("open", ALL_OPEN); });
+      $("toggleAll").textContent = ALL_OPEN ? "소제목 모두 접기" : "소제목 모두 펼치기";
+      Array.prototype.forEach.call(document.querySelectorAll(".rt .sec-blk.open textarea"), autosize);
+      return;
+    }
+    var tg = t.closest(".sec-tg, .chev-btn");
+    if (tg) {
+      var blk = tg.closest(".sec-blk"), on = !blk.classList.contains("open");
+      blk.classList.toggle("open", on); if (on) OPEN[blk.dataset.k] = true; else delete OPEN[blk.dataset.k];
+      var ta = blk.querySelector(".sec-body textarea"); if (on && ta) { autosize(ta); ta.focus(); }
+      return;
+    }
+    if (t.closest(".sec-add")) {
+      var cell = t.closest(".c-last, .c-next"), blks = cell.querySelectorAll(".sec-blk");
+      var holder = document.createElement("div");
+      var kind = cell.classList.contains("c-next") ? "next" : "last", k = secKey(+cell.dataset.row, kind, blks.length);
+      OPEN[k] = true;
+      holder.innerHTML = secEditHtml({ title: "", progress: null, cost: null, body: "" }, kind, k);
+      t.closest(".sec-add").before(holder.firstChild);
+      var ins = cell.querySelectorAll(".sec-title"); ins[ins.length - 1].focus(); markDirty(); return;
+    }
+    var on2 = t.closest("[data-on]");
+    if (on2) {
+      var blk2 = on2.closest(".sec-blk"), cell2 = on2.closest(".c-last, .c-next"), idx = Array.prototype.indexOf.call(cell2.querySelectorAll(".sec-blk"), blk2);
+      var tmp = document.createElement("div"), kind2 = cell2.classList.contains("c-next") ? "next" : "last";
+      var x = readSecs(cell2)[idx];
+      if (on2.dataset.on === "pg") x.progress = kind2 === "last" ? 100 : 0; else x.cost = 0;
+      tmp.innerHTML = secEditHtml(x, kind2, blk2.dataset.k); blk2.replaceWith(tmp.firstChild);
+      refreshMeta(cell2); updateSums(); markDirty();
+      var nb = cell2.querySelectorAll(".sec-blk")[idx], f = nb.querySelector(on2.dataset.on === "pg" ? "select.sec-pg" : ".sec-cost"); if (f) f.focus();
+      return;
+    }
+    var off = t.closest("[data-off]");
+    if (off) {
+      var blk3 = off.closest(".sec-blk"), cell3 = off.closest(".c-last, .c-next"), idx3 = Array.prototype.indexOf.call(cell3.querySelectorAll(".sec-blk"), blk3);
+      var tmp3 = document.createElement("div"), kind3 = cell3.classList.contains("c-next") ? "next" : "last", x3 = readSecs(cell3)[idx3];
+      if (off.dataset.off === "pg") x3.progress = null; else x3.cost = null;
+      tmp3.innerHTML = secEditHtml(x3, kind3, blk3.dataset.k); blk3.replaceWith(tmp3.firstChild);
+      refreshMeta(cell3); updateSums(); markDirty(); return;
+    }
+    var sd2 = t.closest("[data-secdel]");
+    if (sd2) {
+      var blk4 = sd2.closest(".sec-blk"), cell4 = sd2.closest(".c-last, .c-next");
+      var ttl = blk4.querySelector(".sec-title").value.trim(), body4 = blk4.querySelector(".sec-body-in").value.trim();
+      if ((ttl || body4) && !confirm("'■ " + (ttl || "제목 없음") + "' 소제목과 내용을 삭제할까요?")) return;
+      blk4.remove(); OPEN = {}; rerenderCell(cell4); updateSums(); markDirty(); return;
+    }
     if (t.id === "createBtn") {
       t.disabled = true; t.textContent = "만드는 중…";
       call("createMyReport", state.week).then(function (res) {
@@ -941,10 +1137,10 @@
     var PLAN = {
       "demo1@example.com": [["경영", "분기 실적 리뷰 (예시)\n연간 계획 초안 (예시)", "분기 목표 점검 (예시)"], ["대외\n협력", "협력사 미팅 2건 (예시)", "협력사 제안 검토 (예시)"]],
       "demo2@example.com": [["운영", "월간 운영 회의 준비 (예시)", "업무 매뉴얼 정리 (예시)"], ["총무", "비품 구매 (예시)", "비품 재고 점검 (예시)"]],
-      "demo3@example.com": [["사내\n시스템", "주간보고 화면 개선 (예시)\n대시보드 데이터 연결 (예시)", "자동화 스크립트 정리 (예시)"], ["문서", "보고서 양식 통일 (예시)", "회의록 정리 (예시)"]],
+      "demo3@example.com": [["사내\n시스템", "■ 주간보고 화면 개선 (예시) · 진행 100%\n· 시안 3종 비교 (예시)\n· 사이드바 레이아웃 확정 (예시)\n\n■ 대시보드 데이터 연결 (예시) · 진행 60% · 집행 ₩120,000\n· 시트 4종 연결 (예시)\n· 차트 영역 준비 (예시)\n· 권한 점검 (예시)\n\n■ 비품 구입 (예시) · 집행 ₩85,000\n· 모니터 암 (예시)\n· 노트북 거치대 (예시)", "■ 대시보드 데이터 연결 (예시) · 진행 60%\n· 차트 마무리 (예시)\n\n■ 자동화 스크립트 정리 (예시)"], ["문서", "보고서 양식 통일 (예시)", "회의록 정리 (예시)"]],
       "demo4@example.com": [["사업", "고객 인터뷰 3건 (예시)", "시장 조사 (예시)"], ["교육", "설명회 자료 준비 (예시)", "교육 일정 수립 (예시)"]],
       "demo5@example.com": [["영업", "견적서 회신 받기 (예시)\n신규 리드 연락 (예시)", "견적서 회신 받기 (예시)\n전시회 참가 신청 (예시)"], ["제안", "제안서 전달 (예시)", "제안 미팅 (예시)"]],
-      "demo6@example.com": [["개발", "결제 기능 연동 (예시)\nPDF 출력 개선 (예시)", "결제 기능 연동 (예시)"], ["품질", "테스트 케이스 확장 (예시)", "배포 점검 (예시)"]]
+      "demo6@example.com": [["개발", "■ 결제 기능 연동 (예시) · 진행 70%\n· 테스트 결제 확인 (예시)\n· 환불 처리 남음 (예시)\n\n■ PDF 출력 개선 (예시) · 진행 100%\n· 글꼴 깨짐 수정 (예시)", "■ 결제 기능 연동 (예시) · 진행 70%\n· 환불 처리 (예시)"], ["품질", "테스트 케이스 확장 (예시)", "배포 점검 (예시)"]]
     };
     var PROG = { "영업": [20, 10, 0], "개발": [70, 50, 30] };   // 몇 주째 안 끝난 예시
     var DECISIONS = {
@@ -952,6 +1148,15 @@
       "demo6@example.com": { text: "외부 서비스 유료 플랜 전환 여부 (예시)\n테스트 서버 증설 (예시)", cost: 200000 },
       "demo4@example.com": { text: "설명회 장소 예산 승인 (예시)", cost: 200000 }
     };
+    function applySec(sd) { var t = secTotals(parseSections(sd.text).secs); if (t.hasPg) sd.progress = t.progress; if (t.hasCost) sd.cost = t.cost; return sd; }
+    function carryText(text) {
+      return String(text || "").split("\n").map(function (ln) {
+        if (!/^\s*■/.test(ln)) return ln;
+        var t = ln, had = false, hit = true;
+        while (hit) { hit = false; var a = SEC_PG_RE.exec(t); if (a) { t = t.slice(0, a.index); had = true; hit = true; continue; } var b = SEC_COST_RE.exec(t); if (b) { t = t.slice(0, b.index); hit = true; } }
+        return t.replace(/\s+$/, "") + (had ? " · 진행 0%" : "");
+      }).join("\n");
+    }
     function hash(s) { var c = 0; for (var i = 0; i < s.length; i++) c = (c * 31 + s.charCodeAt(i)) % 997; return c; }
     function clone(o) { return JSON.parse(JSON.stringify(o)); }
     var STORE = {};
@@ -962,8 +1167,8 @@
           var st = PROG[g[0]], p = st ? (w < st.length ? st[w] : 100) : [100, 100, 80, 50, 100, 90][hash(g[0] + w) % 6];
           var lc = hash(g[1] + w) % 4 === 0 ? 100000 + (hash(g[0]) % 5) * 50000 : 0, nc = hash(g[2] + w) % 3 === 0 ? 150000 : 0;
           return { r: 5 + gi * 3, cat: g[0],
-            last: { text: g[1], progress: p, cost: lc, note: p < 100 && w % 2 === 0 ? "다음 주 이어서 진행 (예시)" : "" },
-            next: { text: g[2], progress: null, cost: nc, note: gi === 0 && w === 0 ? "외부 일정 확인 필요 (예시)" : "" } };
+            last: applySec({ text: w >= 2 ? g[1].replace(/진행 \d+%/g, "진행 100%") : g[1], progress: p, cost: lc, note: p < 100 && w % 2 === 0 ? "다음 주 이어서 진행 (예시)" : "" }),
+            next: applySec({ text: g[2], progress: null, cost: nc, note: gi === 0 && w === 0 ? "외부 일정 확인 필요 (예시)" : "" }) };
         });
         var d = DECISIONS[m.email];
         STORE[m.email][WEEKS[w].key] = { rows: rows, decision: w <= 1 && d ? { r: 20, text: (w ? "(지난주) " : "") + d.text, cost: d.cost, note: "" } : null,
@@ -1013,7 +1218,7 @@
       createMyReport: function (k) {
         var pk = prevKey(k), prev = pk ? STORE[me.email][pk] : null;
         STORE[me.email][k] = { rows: prev ? prev.rows.map(function (g) {
-            return { r: g.r, cat: g.cat, last: { text: g.next.text, progress: hasText(g.next.text) ? 0 : null, cost: 0, note: "" }, next: { text: "", progress: null, cost: 0, note: "" } }; })
+            return { r: g.r, cat: g.cat, last: applySec({ text: carryText(g.next.text), progress: hasText(g.next.text) ? 0 : null, cost: 0, note: "" }), next: { text: "", progress: null, cost: 0, note: "" } }; })
           : [{ r: 5, cat: "", last: { text: "", progress: null, cost: 0, note: "" }, next: { text: "", progress: null, cost: 0, note: "" } }],
           decision: null, updatedAt: "", v: 1 };
         return report(me.email, k);
@@ -1023,7 +1228,7 @@
         if (base != null && cur2 && String(cur2.v) !== String(base)) return { ok: false, conflict: true, message: "다른 곳에서 먼저 수정되었습니다." };
         var at = kstNow(), v = (cur2 ? cur2.v : 0) + 1;
         var rows = clone(r.rows).filter(function (g) { return norm(g.cat) !== "대표님 결정 필요"; });
-        rows.forEach(function (g) { if (!g.r) g.r = nextR++; });
+        rows.forEach(function (g) { if (!g.r) g.r = nextR++; applySec(g.last); applySec(g.next); });
         var dec = r.decision && (hasText(r.decision.text) || r.decision.cost) ? clone(r.decision) : null;
         STORE[me.email][k] = { rows: rows, decision: dec, updatedAt: at, v: v };
         return { ok: true, savedAt: at, version: String(v), report: clone({ rows: rows, decision: dec, updatedAt: at }) };
