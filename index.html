@@ -901,44 +901,39 @@
     }
     var cur = weekOf(today), WEEKS = [];
     for (var i = 0; i < 12; i++) WEEKS.push(weekOf(addD(cur.start, -7 * i)));
-    var TEAMS = ["대표", "운영기획팀", "소상공인팀", "영업팀", "개발팀"];
+    // ⚠️ 공개 레포에 들어가는 미리보기 데이터 — 실존 인물·실제 업무와 무관한 가상 예시만 사용
+    var TEAMS = ["경영", "기획팀", "사업팀", "영업팀", "개발팀"];
     var MEMBERS = [
-      { email: "ceo@plabsolution.com", name: "장진호", title: "대표", team: "대표" },
-      { email: "ops.lead@plabsolution.com", name: "정성우", title: "팀장", team: "운영기획팀" },
-      { email: "manager@plabsolution.com", name: "손병의", title: "매니저", team: "운영기획팀" },
-      { email: "smb.lead@plabsolution.com", name: "김지연", title: "팀장", team: "소상공인팀" },
-      { email: "sales.lead@plabsolution.com", name: "백승일", title: "팀장", team: "영업팀" },
-      { email: "dev.lead@plabsolution.com", name: "정종훈", title: "팀장", team: "개발팀" }
+      { email: "demo1@example.com", name: "홍길동", title: "대표", team: "경영" },
+      { email: "demo2@example.com", name: "김철수", title: "팀장", team: "기획팀" },
+      { email: "demo3@example.com", name: "이영희", title: "매니저", team: "기획팀" },
+      { email: "demo4@example.com", name: "박민수", title: "팀장", team: "사업팀" },
+      { email: "demo5@example.com", name: "최지은", title: "팀장", team: "영업팀" },
+      { email: "demo6@example.com", name: "정다은", title: "팀장", team: "개발팀" }
     ];
     var me = MEMBERS[2];
     var PLAN = {
-      "ceo@plabsolution.com": { "투자·IR": [["시리즈A 투자사 IR 2곳 미팅"], ["시리즈A IR 덱 업데이트"], ["IR 덱 초안 검토"]],
-        "TIPS 과제": [["TIPS 중간점검 자료 최종 검토"], ["TIPS 중간점검 자료 검토"], ["TIPS 협약 후속 일정 점검"]],
-        "제휴": [["가맹본부 파트너십 MOU 조율"], ["가맹본부 파트너십 MOU 조율"], ["가맹본부 파트너십 MOU 조율"]] },
-      "ops.lead@plabsolution.com": { "지원사업": [["11월 정부지원사업 공고 검토·지원 여부 결정"], ["지원사업 공고 모니터링"], ["공고 모니터링 체계 정리"]],
-        "총무·계약": [["사무실 임대차 재계약 조건 협의"], ["사무실 임대차 재계약 조건 협의", "법인카드 영수증 미제출 건 정리"], ["추석 연휴 근무 일정 공지"]],
-        "세무·회계": [["3분기 부가세 자료 세무사 전달"], ["3분기 부가세 자료 정리"], ["9월 급여·4대보험 처리"]] },
-      "manager@plabsolution.com": { "사내 시스템": [["사내 현황 대시보드 Code.gs 연결", "주간업무보고 웹앱 배포"], ["사내 현황 대시보드 시안 작성", "지원사업 공고 레이더 페이지 시안"], ["급여정산 자동화 도구 RCMS 양식 매핑"]],
-        "TIPS 과제": [["TIPS 10월 인건비 RCMS 등록 준비"], ["TIPS 9월 계좌이체증명서 업로드"], ["TIPS 9월 계좌이체증명서 업로드"]],
-        "스마트상점": [["수요기업 정산 서류 취합"], ["공급기업 서류 제출"], ["공급기업 서류 제출"]] },
-      "smb.lead@plabsolution.com": { "스마트상점": [["수요기업 현장 방문 4곳"], ["수요기업 상담 6건"], ["수요기업 모집 홍보"]],
-        "소상공인 교육": [["챗봇 설명회 자료 준비", "협력 상권 상인회 미팅"], ["챗봇 설명회 자료 준비"], ["상권 분석 리포트 템플릿 확정"]] },
-      "sales.lead@plabsolution.com": { "가맹본부 영업": [["예시프랜차이즈 계약서 회신 받기", "신규 리드 5곳 콜드메일"], ["예시프랜차이즈 계약서 회신 받기", "외식 박람회 부스 신청"], ["예시프랜차이즈 계약서 회신 받기"]],
-        "PoC": [["PoC 결과 보고서 전달"], ["PoC 결과 보고서 작성"], ["PoC 2차 미팅"]] },
-      "dev.lead@plabsolution.com": { "제품 개발": [["결제 모듈(PG) 연동", "가맹 설계 리포트 PDF 출력 개선"], ["결제 모듈(PG) 연동"], ["결제 모듈(PG) 연동", "가맹 정보공개서 파서 v2"]],
-        "AI 품질": [["챗봇 응답 품질 평가셋 확장"], ["챗봇 응답 품질 평가셋 확장"], ["챗봇 v1.4 배포"]],
-        "인프라": [["스테이징 서버 비용 점검"], ["로그 모니터링 대시보드"], ["로그 모니터링 대시보드"]] }
+      "demo1@example.com": { "경영": [["분기 실적 리뷰 (예시)"], ["분기 목표 점검 (예시)"], ["연간 계획 초안 (예시)"]],
+        "대외 협력": [["협력사 미팅 2건 (예시)"], ["협력사 제안 검토 (예시)"], ["협력사 제안 검토 (예시)"]] },
+      "demo2@example.com": { "운영": [["월간 운영 회의 준비 (예시)"], ["업무 매뉴얼 정리 (예시)"], ["업무 매뉴얼 정리 (예시)"]],
+        "총무": [["비품 구매 (예시)"], ["사무실 환경 개선 검토 (예시)"], ["비품 재고 점검 (예시)"]] },
+      "demo3@example.com": { "사내 시스템": [["주간보고 화면 개선 (예시)", "대시보드 데이터 연결 (예시)"], ["주간보고 화면 시안 (예시)"], ["자동화 스크립트 정리 (예시)"]],
+        "문서": [["보고서 양식 통일 (예시)"], ["회의록 정리 (예시)"], ["회의록 정리 (예시)"]] },
+      "demo4@example.com": { "사업": [["고객 인터뷰 3건 (예시)"], ["고객 인터뷰 준비 (예시)"], ["시장 조사 (예시)"]],
+        "교육": [["설명회 자료 준비 (예시)"], ["설명회 자료 준비 (예시)"], ["교육 일정 수립 (예시)"]] },
+      "demo5@example.com": { "영업": [["견적서 회신 받기 (예시)", "신규 리드 연락 (예시)"], ["견적서 회신 받기 (예시)", "전시회 참가 신청 (예시)"], ["견적서 회신 받기 (예시)"]],
+        "제안": [["제안서 전달 (예시)"], ["제안서 작성 (예시)"], ["제안 미팅 (예시)"]] },
+      "demo6@example.com": { "개발": [["결제 기능 연동 (예시)", "PDF 출력 개선 (예시)"], ["결제 기능 연동 (예시)"], ["결제 기능 연동 (예시)"]],
+        "품질": [["테스트 케이스 확장 (예시)"], ["테스트 케이스 확장 (예시)"], ["배포 점검 (예시)"]] }
     };
-    var COST = { "시리즈A 투자사 IR 2곳 미팅": 200000, "외식 박람회 부스 신청": 1500000, "챗봇 설명회 자료 준비": 300000, "결제 모듈(PG) 연동": 550000,
-      "수요기업 현장 방문 4곳": 120000, "로그 모니터링 대시보드": 90000, "챗봇 응답 품질 평가셋 확장": 250000, "협력 상권 상인회 미팅": 80000,
-      "스테이징 서버 비용 점검": 0, "PoC 결과 보고서 전달": 0, "TIPS 9월 계좌이체증명서 업로드": 0 };
+    var COST = { "협력사 미팅 2건 (예시)": 100000, "전시회 참가 신청 (예시)": 1000000, "설명회 자료 준비 (예시)": 200000, "결제 기능 연동 (예시)": 300000,
+      "고객 인터뷰 3건 (예시)": 90000, "비품 구매 (예시)": 150000, "테스트 케이스 확장 (예시)": 100000 };
     var DECISIONS = {
-      "sales.lead@plabsolution.com": [{ text: "예시프랜차이즈 계약서 법무 검토 외주 진행 여부", cost: 500000 }],
-      "dev.lead@plabsolution.com": [{ text: "PG사 수수료 플랜 선택 (기본형 vs 프로형)", cost: 330000 }],
-      "smb.lead@plabsolution.com": [{ text: "설명회 장소 대관 예산 승인", cost: 300000 }],
-      "ops.lead@plabsolution.com": [{ text: "사무실 재계약 시 보증금 인상안 수용 여부", cost: 5000000 }]
+      "demo5@example.com": [{ text: "견적 할인 폭 승인 여부 (예시)", cost: 300000 }],
+      "demo6@example.com": [{ text: "외부 서비스 유료 플랜 전환 여부 (예시)", cost: 200000 }],
+      "demo4@example.com": [{ text: "설명회 장소 예산 승인 (예시)", cost: 200000 }]
     };
-    var STUCK = { "예시프랜차이즈 계약서 회신 받기": [20, 10, 0], "가맹본부 파트너십 mou 조율": [60, 40, 30], "결제 모듈(pg) 연동": [70, 50, 30] };
+    var STUCK = { "견적서 회신 받기 (예시)": [20, 10, 0], "결제 기능 연동 (예시)": [70, 50, 30] };
     function pick(arr, w, cat) { return w < arr.length ? arr[w] : [cat + " 정기 업무 (" + WEEKS[Math.min(w, WEEKS.length - 1)].label + ")"]; }
     function hash(s) { var c = 0; for (var i = 0; i < s.length; i++) c = (c * 31 + s.charCodeAt(i)) % 997; return c; }
     var STORE = {};
@@ -961,7 +956,7 @@
       }
     });
     delete STORE[me.email][cur.key];
-    var sl = STORE["sales.lead@plabsolution.com"][cur.key];
+    var sl = STORE["demo5@example.com"][cur.key];
     sl.rows.forEach(function (r) { r.next = []; r.last.forEach(function (i) { i.progress = 0; i.cost = 0; }); }); sl.decisions = []; sl.updatedAt = "";
 
     function wi(k) { for (var i = 0; i < WEEKS.length; i++) if (WEEKS[i].key === k) return i; return -1; }
@@ -1041,7 +1036,7 @@
   if (isPreview) {
     $("previewBanner").hidden = false;
     var ps = $("previewUser");
-    ps.innerHTML = Mock.members.map(function (m) { return '<option value="' + m.email + '"' + (m.name === "손병의" ? " selected" : "") + ">" + m.name + " " + m.title + "</option>"; }).join("");
+    ps.innerHTML = Mock.members.map(function (m) { return '<option value="' + m.email + '"' + (m.name === "이영희" ? " selected" : "") + ">" + m.name + " " + m.title + "</option>"; }).join("");
     ps.addEventListener("change", function () { if (!confirmLeave()) return; state.dirty = false; Mock.setMe(ps.value); boot(); });
   }
   boot();
