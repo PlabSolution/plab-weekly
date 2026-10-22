@@ -347,6 +347,8 @@
 
   /* =========================================================
      서버 API (Apps Script Code.gs · POST { action, args, idToken } → { ok, data | code, error })
+     - getInit()                            → { boot, week, statuses, reports:{ email: getReport 응답 } }   ← 첫 화면 (요청 1번)
+     - getWeek(weekKey)                     → { week, statuses, reports }                                  ← 주차 변경
      - getBootstrap()                       → { me:{email,name,title,team}, weeks:[{key,label,start,end}], currentWeek,
                                                  teams:[...], members:[{email,name,title,team}] }
      - getWeekStatus(weekKey)               → { statuses: { email: "submitted"|"empty"|"no_tab"|"no_file"|"no_access" } }
@@ -366,6 +368,18 @@
   var CFG = window.PLAB_CONFIG || {};
   var isPreview = !CFG.APPS_SCRIPT_URL || !CFG.GOOGLE_CLIENT_ID || /[?&]demo\b/.test(location.search);
   var state = { boot: null, week: null, sel: null, statuses: {}, cur: null, dirty: false, saving: false };
+  /* 보고서 캐시: 한 주차의 6명 보고서를 한 번에 받아 두고, 팀원을 누르면 바로 표시 (2분 지나면 다시 불러옴) */
+  var RCACHE = {}, RCACHE_MS = 120000;
+  function ckey(week, email) { return week + "|" + email; }
+  function cachePutReports(week, reports) {
+    var now = Date.now();
+    Object.keys(reports || {}).forEach(function (e) { RCACHE[ckey(week, e)] = { t: now, d: reports[e] }; });
+  }
+  function cacheGetReport(week, email) {
+    var c = RCACHE[ckey(week, email)];
+    return c && Date.now() - c.t < RCACHE_MS ? JSON.parse(JSON.stringify(c.d)) : null;
+  }
+  function cacheSetCur() { if (state.cur && state.sel && state.sel !== OVERVIEW) RCACHE[ckey(state.week, state.sel)] = { t: Date.now(), d: JSON.parse(JSON.stringify(state.cur)) }; }
   var OVERVIEW = "__overview__";
   var NEW_LAST_PROGRESS = 100;   // 직접 추가한 '지난주 과업' 기본 진행률 (이월 항목은 서버에서 0%)
 
@@ -505,7 +519,7 @@
     var args = Array.prototype.slice.call(arguments, 1);
     if (!isPreview) return callLive(fn, args, false);
     return new Promise(function (resolve, reject) {
-      setTimeout(function () { try { resolve(JSON.parse(JSON.stringify(Mock[fn].apply(null, args)))); } catch (e) { reject(e); } }, 150);
+      setTimeout(function () { try { resolve(JSON.parse(JSON.stringify(Mock[fn].apply(Mock, args)))); } catch (e) { reject(e); } }, 150);
     });
   }
   function confirmLeave() { return !state.dirty || confirm("저장하지 않은 내용이 있습니다. 이동할까요?"); }
@@ -577,7 +591,13 @@
     if (!confirmLeave()) { renderWeekBar(); return; }
     state.week = key; state.dirty = false;
     renderWeekBar();
-    loadStatuses().then(function () { select(state.sel, true); });
+    $("savebar").hidden = true;
+    $("app").innerHTML = '<div class="loading">불러오는 중…</div>';
+    call("getWeek", key).then(function (r) {
+      if (state.week !== key) return;
+      state.statuses = r.statuses || {}; cachePutReports(key, r.reports); renderNav();
+      select(state.sel, true);
+    }).catch(function (e) { $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
   }
   function loadStatuses() {
     return call("getWeekStatus", state.week).then(function (r) { state.statuses = r.statuses || {}; renderNav(); })
@@ -595,8 +615,13 @@
     $("savebar").hidden = true;
     $("app").innerHTML = '<div class="loading">불러오는 중…</div>';
     if (sel === OVERVIEW) return loadOverview();
-    return call("getReport", sel, state.week).then(function (res) { state.cur = res; renderReport(); })
-      .catch(function (e) { $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
+    var cached = cacheGetReport(state.week, sel);
+    if (cached) { state.cur = cached; renderReport(); return Promise.resolve(); }
+    var week = state.week;
+    return call("getReport", sel, week).then(function (res) {
+      if (state.sel !== sel || state.week !== week) return;
+      state.cur = res; cacheSetCur(); renderReport();
+    }).catch(function (e) { $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
   }
 
   function whoHtml(m, meta) {
@@ -746,10 +771,10 @@
       if (res && res.conflict) {
         setSaveStatus();
         if (confirm((res.message || "다른 곳(시트 또는 다른 창)에서 이 보고서가 먼저 수정되었습니다.") + "\n\n[확인] 지금 화면 내용으로 덮어쓰기\n[취소] 최신 내용 다시 불러오기 (화면 수정분은 사라짐)")) save(true);
-        else { state.dirty = false; select(state.sel, true); }
+        else { state.dirty = false; delete RCACHE[ckey(state.week, state.sel)]; select(state.sel, true); }
         return;
       }
-      state.dirty = false; r.updatedAt = res.savedAt; state.cur.version = res.version;
+      state.dirty = false; r.updatedAt = res.savedAt; state.cur.version = res.version; cacheSetCur();
       setSaveStatus(); toast("✅ 시트에 저장했습니다");
       var ok = hasContent(r), p = $("subPill"); if (p) { p.className = "pill " + (ok ? "ok" : "warn"); p.textContent = ok ? "제출" : "미작성"; }
       state.statuses[state.boot.me.email] = ok ? "submitted" : "empty"; renderNav();
@@ -800,7 +825,7 @@
     if (t.id === "createBtn") {
       t.disabled = true; t.textContent = "만드는 중…";
       call("createMyReport", state.week).then(function (res) {
-        state.cur = res; state.dirty = false; renderReport(); toast("✅ '" + res.tabName + "' 탭을 만들었습니다");
+        state.cur = res; state.dirty = false; cacheSetCur(); renderReport(); toast("✅ '" + res.tabName + "' 탭을 만들었습니다");
         state.statuses[state.boot.me.email] = "empty"; renderNav();
       }).catch(function (err) { t.disabled = false; t.textContent = "다시 시도"; toast("생성 실패: " + errMsg(err)); });
       return;
@@ -854,8 +879,32 @@
   }
   var STATUS_LABEL = { submitted: '<span class="pill ok">제출</span>', empty: '<span class="pill warn">미작성</span>', no_tab: '<span class="pill warn">탭 없음</span>',
     no_file: '<span class="pill n">파일 없음</span>', no_access: '<span class="pill n">권한 없음</span>' };
+  /* 받아 둔 6명 보고서로 전체 현황 계산 (서버 getOverview와 같은 결과) — 다 있으면 서버 요청 없이 즉시 표시 */
+  function overviewFromCache(week) {
+    var ms = state.boot.members, teams = state.boot.teams, list = [];
+    for (var i = 0; i < ms.length; i++) { var c = cacheGetReport(week, ms[i].email); if (!c) return null; list.push(c); }
+    var res = { total: ms.length, submitted: 0, missing: [], decisions: [], members: [], teams: [], totals: {} };
+    var team = {}, all = { items: [], lastCost: 0, nextCost: 0, decisionCost: 0 };
+    function avg(a) { return a.length ? Math.round(a.reduce(function (s, x) { return s + clampPg(x.progress); }, 0) / a.length) : null; }
+    ms.forEach(function (m, i) {
+      var rp = list[i], r = rp.report || { rows: [], decisions: [] }, st = stats(r), L = lastItems(r);
+      var status = rp.noFile ? "no_file" : !rp.exists ? "no_tab" : hasContent(r) ? "submitted" : "empty";
+      if (status === "submitted") res.submitted++; else res.missing.push(m.email);
+      res.members.push({ email: m.email, status: status, progress: st.progress, lastCost: st.lastCost, nextCost: st.nextCost });
+      var t = team[m.team] = team[m.team] || { team: m.team, items: [], lastCost: 0, nextCost: 0, submitted: 0, total: 0 };
+      t.items = t.items.concat(L); t.lastCost += st.lastCost; t.nextCost += st.nextCost; t.total++; if (status === "submitted") t.submitted++;
+      all.items = all.items.concat(L); all.lastCost += st.lastCost; all.nextCost += st.nextCost;
+      decItems(r).forEach(function (d) { res.decisions.push({ email: m.email, text: d.text, cost: d.cost }); all.decisionCost += +d.cost || 0; });
+    });
+    var order = teams.concat(Object.keys(team).filter(function (t) { return teams.indexOf(t) < 0; }));
+    res.teams = order.filter(function (t) { return team[t]; }).map(function (t) { var x = team[t]; return { team: t, progress: avg(x.items), lastCost: x.lastCost, nextCost: x.nextCost, submitted: x.submitted, total: x.total }; });
+    res.totals = { progress: avg(all.items), lastCost: all.lastCost, nextCost: all.nextCost, decisionCost: all.decisionCost };
+    return res;
+  }
+
   function loadOverview() {
-    return call("getOverview", state.week).then(function (o) {
+    var local = overviewFromCache(state.week);
+    return (local ? Promise.resolve(local) : call("getOverview", state.week)).then(function (o) {
       var miss = o.missing || [], decs = o.decisions || [], T = o.totals || {};
       var h = '<div class="ov-grid">' +
         '<div class="kpi"><div class="l">제출 현황</div><div class="v num">' + o.submitted + "<small>/ " + o.total + "명</small></div>" +
@@ -988,6 +1037,16 @@
       getBootstrap: function () { return { me: me, weeks: WEEKS, currentWeek: cur.key, teams: TEAMS, members: MEMBERS }; },
       getWeekStatus: function (k) { var o = {}; MEMBERS.forEach(function (m) { o[m.email] = status(m.email, k); }); return { statuses: o }; },
       getReport: report,
+      getInit: function () {
+        var o = { boot: this.getBootstrap(), week: cur.key, statuses: {}, reports: {} };
+        MEMBERS.forEach(function (m) { o.statuses[m.email] = status(m.email, cur.key); o.reports[m.email] = report(m.email, cur.key); });
+        return o;
+      },
+      getWeek: function (k) {
+        var o = { week: k, statuses: {}, reports: {} };
+        MEMBERS.forEach(function (m) { o.statuses[m.email] = status(m.email, k); o.reports[m.email] = report(m.email, k); });
+        return o;
+      },
       createMyReport: function (k) {
         var pk = prevKey(k), prev = pk ? STORE[me.email][pk] : null;
         STORE[me.email][k] = { rows: prev ? prev.rows.map(function (r) { return { cat: r.cat, last: r.next.map(function (t) { return { text: t.text, progress: 0, cost: 0 }; }), next: [] }; }) : [{ cat: "", last: [], next: [] }],
@@ -1024,12 +1083,13 @@
 
   /* ---------- 시작 ---------- */
   function boot() {
-    return call("getBootstrap").then(function (b) {
-      state.boot = b;
-      if (!state.week || !b.weeks.some(function (w) { return w.key === state.week; })) state.week = b.currentWeek;
-      state.sel = null;
-      renderWeekBar();
-      return loadStatuses().then(function () { select(b.me.email, true); });
+    RCACHE = {};
+    return call("getInit").then(function (r) {
+      var b = r.boot;
+      state.boot = b; state.week = r.week || b.currentWeek; state.sel = null;
+      state.statuses = r.statuses || {}; cachePutReports(state.week, r.reports);
+      renderWeekBar(); renderNav();
+      select(b.me.email, true);
     }).catch(function (e) { $("app").innerHTML = '<div class="err">시작하지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
   }
   if (!isPreview) Auth.load();
