@@ -3,8 +3,8 @@
  * - 아이콘·매니페스트만 캐시
  * - 보고서 데이터(Apps Script)·구글 로그인·폰트 등 다른 주소 요청은 건드리지 않음 (보고서 내용은 기기에 저장하지 않음)
  */
-const CACHE = 'plab-weekly-v1';
-const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
+const CACHE = 'plab-weekly-v2';
+const SHELL = ['./', './manifest.webmanifest', './icons/icon-192-v2.png', './icons/icon-512-v2.png', './icons/apple-touch-icon-v2.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
