@@ -406,12 +406,31 @@
   var CFG = window.PLAB_CONFIG || {};
   var isPreview = !CFG.APPS_SCRIPT_URL || !CFG.GOOGLE_CLIENT_ID || /[?&]demo\b/.test(location.search);
   var state = { boot: null, week: null, sel: null, statuses: {}, cur: null, dirty: false, saving: false };
-  /* 보고서 캐시: 한 주차의 6명 보고서를 한 번에 받아 두고, 팀원을 누르면 바로 표시 (2분 지나면 다시 불러옴) */
-  var RCACHE = {}, RCACHE_MS = 120000;
+  /* 보고서 캐시 (2분)
+     1) 첫 화면: 내 보고서만 받아 바로 표시  2) 뒤에서 그 주 6명을 받아 둠 → 팀원을 누르면 바로 표시
+     'N주째'(과거 탭 비교)는 사람을 열 때만 따로 받아 채움 (staleFull) */
+  var RCACHE = {}, RCACHE_MS = 120000, WEEKLOAD = {};
   function ckey(week, email) { return week + "|" + email; }
   function cachePutReports(week, reports) {
     var now = Date.now();
-    Object.keys(reports || {}).forEach(function (e) { RCACHE[ckey(week, e)] = { t: now, d: reports[e] }; });
+    Object.keys(reports || {}).forEach(function (e) {
+      var d = reports[e], old = RCACHE[ckey(week, e)];
+      // 'N주째'까지 받아 둔 게 있으면 그 정보는 유지
+      if (!d.staleFull && old && old.d.staleFull && Date.now() - old.t < RCACHE_MS) { d.stale = old.d.stale; d.staleFull = true; }
+      RCACHE[ckey(week, e)] = { t: now, d: d };
+    });
+  }
+  /* 그 주 6명 보고서 + 제출 상태를 뒤에서 받음 (같은 주는 한 번만 요청) */
+  function loadWeekAll(week) {
+    if (WEEKLOAD[week]) return WEEKLOAD[week];
+    var p = call("getWeek", week).then(function (r) {
+      cachePutReports(week, r.reports);
+      if (state.week === week) { state.statuses = r.statuses || {}; renderNav(); }
+      return r;
+    });
+    WEEKLOAD[week] = p;
+    p.then(function () { setTimeout(function () { delete WEEKLOAD[week]; }, RCACHE_MS); }, function () { delete WEEKLOAD[week]; });
+    return p;
   }
   function cacheGetReport(week, email) {
     var c = RCACHE[ckey(week, email)];
@@ -669,12 +688,9 @@
     state.week = key; state.dirty = false;
     renderWeekBar();
     $("savebar").hidden = true;
-    $("app").innerHTML = '<div class="loading">불러오는 중…</div>';
-    call("getWeek", key).then(function (r) {
-      if (state.week !== key) return;
-      state.statuses = r.statuses || {}; cachePutReports(key, r.reports); renderNav();
-      select(state.sel, true);
-    }).catch(function (e) { $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
+    state.statuses = {}; renderNav();
+    select(state.sel, true);                             // 보고 있던 사람 먼저
+    loadWeekAll(key).catch(function () {});              // 나머지 인원·제출 상태는 뒤에서
   }
   function loadStatuses() {
     return call("getWeekStatus", state.week).then(function (r) { state.statuses = r.statuses || {}; renderNav(); })
@@ -692,13 +708,24 @@
     $("savebar").hidden = true;
     $("app").innerHTML = '<div class="loading">불러오는 중…</div>';
     if (sel === OVERVIEW) return loadOverview();
-    var cached = cacheGetReport(state.week, sel);
-    if (cached) { state.cur = cached; renderReport(); return Promise.resolve(); }
-    var week = state.week;
+    var week = state.week, cached = cacheGetReport(week, sel);
+    if (cached) {
+      state.cur = cached; renderReport();
+      if (!cached.staleFull) fillStale(sel, week);       // 'N주째'만 뒤에서 채움
+      return Promise.resolve();
+    }
     return call("getReport", sel, week).then(function (res) {
-      if (state.sel !== sel || state.week !== week) return;
-      state.cur = res; cacheSetCur(); renderReport();
-    }).catch(function (e) { $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
+      cachePutReports(week, (function (o) { o[sel] = res; return o; })({}));
+      if (state.sel !== sel || state.week !== week || state.dirty) return;
+      state.cur = res; renderReport();
+    }).catch(function (e) { if (state.sel === sel) $("app").innerHTML = '<div class="err">불러오지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
+  }
+  function fillStale(sel, week) {
+    call("getReport", sel, week).then(function (res) {
+      cachePutReports(week, (function (o) { o[sel] = res; return o; })({}));
+      // 아직 그 화면이고 손대지 않았을 때만 다시 그림 (작성 중인 내용은 건드리지 않음)
+      if (state.sel === sel && state.week === week && !state.dirty && state.cur && state.cur.version === res.version) { state.cur = res; renderReport(); }
+    }).catch(function () {});
   }
 
   function whoHtml(m, meta) {
@@ -1089,8 +1116,11 @@
   }
 
   function loadOverview() {
-    var local = overviewFromCache(state.week);
-    return (local ? Promise.resolve(local) : call("getOverview", state.week)).then(function (o) {
+    var week = state.week, local = overviewFromCache(week);
+    var src = local ? Promise.resolve(local)
+      : loadWeekAll(week).then(function () { return overviewFromCache(week) || call("getOverview", week); }, function () { return call("getOverview", week); });
+    return src.then(function (o) {
+      if (state.sel !== OVERVIEW || state.week !== week) return;
       var miss = o.missing || [], decs = o.decisions || [], T = o.totals || {};
       var h = '<div class="ov-grid">' +
         '<div class="kpi"><div class="l">제출 현황</div><div class="v num">' + o.submitted + "<small>/ " + o.total + "명</small></div>" +
@@ -1210,7 +1240,7 @@
       var m = MEMBERS.filter(function (x) { return x.email === email; })[0], w = WEEKS[wi(k)], r = STORE[email][k];
       return { member: m, access: email === me.email ? "edit" : "view", exists: !!r, noFile: false,
         tabName: w.label, fileUrl: "https://docs.google.com/spreadsheets/", prevWeek: { start: addD(w.start, -7), end: addD(w.end, -7) },
-        report: r ? clone({ rows: r.rows, decision: r.decision, updatedAt: r.updatedAt }) : null, version: r ? String(r.v) : null, stale: staleMap(email, k) };
+        report: r ? clone({ rows: r.rows, decision: r.decision, updatedAt: r.updatedAt }) : null, version: r ? String(r.v) : null, stale: staleMap(email, k), staleFull: true };
     }
     var nextR = 100;
     return {
@@ -1221,12 +1251,12 @@
       getReport: report,
       getInit: function () {
         var o = { boot: this.getBootstrap(), week: cur.key, statuses: {}, reports: {} };
-        MEMBERS.forEach(function (m) { o.statuses[m.email] = status(m.email, cur.key); o.reports[m.email] = report(m.email, cur.key); });
+        o.reports[me.email] = report(me.email, cur.key);
         return o;
       },
       getWeek: function (k) {
         var o = { week: k, statuses: {}, reports: {} };
-        MEMBERS.forEach(function (m) { o.statuses[m.email] = status(m.email, k); o.reports[m.email] = report(m.email, k); });
+        MEMBERS.forEach(function (m) { o.statuses[m.email] = status(m.email, k); var r = report(m.email, k); r.stale = {}; r.staleFull = false; o.reports[m.email] = r; });
         return o;
       },
       createMyReport: function (k) {
@@ -1253,13 +1283,14 @@
 
   /* ---------- 시작 ---------- */
   function boot() {
-    RCACHE = {};
+    RCACHE = {}; WEEKLOAD = {};
     return call("getInit").then(function (r) {
       var b = r.boot;
       state.boot = b; state.week = r.week || b.currentWeek; state.sel = null;
       state.statuses = r.statuses || {}; cachePutReports(state.week, r.reports);
       renderWeekBar(); renderNav();
-      select(b.me.email, true);
+      select(b.me.email, true);                          // 내 보고서 바로 표시
+      loadWeekAll(state.week).catch(function () {});     // 나머지 5명·제출 상태는 뒤에서
     }).catch(function (e) { $("app").innerHTML = '<div class="err">시작하지 못했습니다. ' + esc(errMsg(e)) + "</div>"; });
   }
   if (!isPreview) Auth.load();
