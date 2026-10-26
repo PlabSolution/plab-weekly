@@ -187,6 +187,23 @@
   .cost::placeholder { color: var(--muted); font-weight: 400; }
   .cost:focus { border-color: var(--money); box-shadow: 0 0 0 2px var(--money-soft); }
   .cost:not(:focus):not(:placeholder-shown) { background: var(--money-soft); border-color: transparent; }
+  /* 금액 종류: 집행·예상(보라, 합계에 포함) / 매출(초록) / 계약(회색) — 매출·계약은 집행 합계에서 빠짐 */
+  .won.k-sales { color: var(--green); background: var(--green-soft); }
+  .won.k-contract { color: var(--text-2); background: var(--surface-3); }
+  .cost.k-sales { color: var(--green); } .cost.k-sales:focus { border-color: var(--green); box-shadow: 0 0 0 2px var(--green-soft); }
+  .cost.k-sales:not(:focus):not(:placeholder-shown) { background: var(--green-soft); }
+  .cost.k-contract { color: var(--text-2); } .cost.k-contract:focus { border-color: var(--text-2); box-shadow: 0 0 0 2px var(--surface-3); }
+  .cost.k-contract:not(:focus):not(:placeholder-shown) { background: var(--surface-3); }
+  select.ck { appearance: none; -webkit-appearance: none; cursor: pointer; height: 22px; border: 1px solid transparent; border-radius: 5px; padding: 0 16px 0 7px; font-size: 11.5px; font-weight: 700;
+    color: var(--money); background-color: var(--money-soft);
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: right 8px top 9px, right 4px top 9px; background-size: 4px 4px; background-repeat: no-repeat; }
+  select.ck.k-sales { color: var(--green); background-color: var(--green-soft); }
+  select.ck.k-contract { color: var(--text-2); background-color: var(--surface-3); }
+  .ckw { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .ckw .cost { width: 76px; }
+  select.ck:hover, select.ck:focus { border-color: currentColor; outline: none; }
+  select.ck option { color: var(--text); background: var(--surface); font-weight: 400; }
 
   .stale { font-size: 11px; font-weight: 700; color: var(--mention-text); background: var(--mention); padding: 0 6px; border-radius: 4px; white-space: nowrap; line-height: 20px; }
   .cell-empty { color: var(--muted); font-size: 13px; padding: 4px 6px; }
@@ -505,38 +522,45 @@
   function clampPg(p) { p = Math.round(+p || 0); return Math.max(0, Math.min(100, p)); }
 
   /* ■ 소제목 — '■ 제목 · 진행 60% · 집행 ₩109,260' (Code.gs sections_와 같은 규칙) */
-  var SEC_PG_RE = /\s*·\s*진행\s*(\d{1,3})\s*%\s*$/, SEC_COST_RE = /\s*·\s*(?:집행|예상|금액)\s*₩?\s*([\d,]+)\s*원?\s*$/;
+  var SEC_PG_RE = /\s*·\s*진행\s*(\d{1,3})\s*%\s*$/, SEC_COST_RE = /\s*·\s*(집행|예상|금액|매출|계약)\s*₩?\s*([\d,]+)\s*원?\s*$/;
+  /* 금액 종류: 첫 번째(집행·예상)만 칸 합계(시트 F·J열)에 들어가고, 매출·계약은 따로 합산 */
+  var COST_KINDS = { last: ["집행", "매출", "계약"], next: ["예상", "매출", "계약"] };
+  var EXTRA_KINDS = ["매출", "계약"];
+  function baseWord(kind) { return COST_KINDS[kind === "next" ? "next" : "last"][0]; }
+  function isExtra(ck) { return EXTRA_KINDS.indexOf(ck) >= 0; }
+  function ckCls(ck) { return ck === "매출" ? " k-sales" : ck === "계약" ? " k-contract" : ""; }
   function parseSections(text) {
     var pre = [], secs = [], cur = null;
     String(text || "").split("\n").forEach(function (ln) {
       var m = /^\s*■\s?(.*)$/.exec(ln);
       if (m) {
-        var t = m[1], prog = null, cost = null, hit = true;
+        var t = m[1], prog = null, cost = null, ck = null, hit = true;
         while (hit) {
           hit = false;
           var a = SEC_PG_RE.exec(t); if (a) { prog = clampPg(+a[1]); t = t.slice(0, a.index); hit = true; continue; }
-          var b = SEC_COST_RE.exec(t); if (b) { cost = +b[1].replace(/,/g, ""); t = t.slice(0, b.index); hit = true; }
+          var b = SEC_COST_RE.exec(t); if (b) { ck = isExtra(b[1]) ? b[1] : null; cost = +b[2].replace(/,/g, ""); t = t.slice(0, b.index); hit = true; }
         }
-        cur = { title: t.trim(), progress: prog, cost: cost, body: [] }; secs.push(cur);
+        cur = { title: t.trim(), progress: prog, cost: cost, ck: ck, body: [] }; secs.push(cur);
       } else (cur ? cur.body : pre).push(ln);
     });
     var trim = function (a) { return a.join("\n").replace(/^\s*\n/, "").replace(/\s+$/, ""); };
     return { pre: trim(pre), secs: secs.map(function (x) { x.body = trim(x.body); return x; }) };
   }
   function buildSections(pre, secs, kind) {
-    var word = kind === "next" ? "예상" : "집행", out = [];
+    var out = [];
     if (hasText(pre)) out.push(pre.replace(/\s+$/, ""));
     secs.forEach(function (x) {
-      var h = "■ " + x.title.trim() + (x.progress !== null ? " · 진행 " + x.progress + "%" : "") + (x.cost !== null ? " · " + word + " ₩" + (+x.cost || 0).toLocaleString("en-US") : "");
+      var h = "■ " + x.title.trim() + (x.progress !== null ? " · 진행 " + x.progress + "%" : "") + (x.cost !== null ? " · " + (isExtra(x.ck) ? x.ck : baseWord(kind)) + " ₩" + (+x.cost || 0).toLocaleString("en-US") : "");
       out.push(h + (hasText(x.body) ? "\n" + x.body.replace(/\s+$/, "") : ""));
     });
     return out.join("\n\n");
   }
   function secTotals(secs) {
     var pg = secs.filter(function (x) { return x.progress !== null; }).map(function (x) { return x.progress; });
-    var cs = secs.filter(function (x) { return x.cost !== null; });
+    var cs = secs.filter(function (x) { return x.cost !== null; }), extra = {};
+    cs.forEach(function (x) { if (isExtra(x.ck)) extra[x.ck] = (extra[x.ck] || 0) + (+x.cost || 0); });
     return { progress: pg.length ? Math.round(pg.reduce(function (a, b) { return a + b; }, 0) / pg.length) : null, hasPg: pg.length > 0,
-      cost: cs.reduce(function (a, x) { return a + (+x.cost || 0); }, 0), hasCost: cs.length > 0 };
+      cost: cs.reduce(function (a, x) { return a + (isExtra(x.ck) ? 0 : +x.cost || 0); }, 0), hasCost: cs.length > 0, extra: extra };
   }
   function lineCount(t) { return String(t || "").split("\n").filter(function (l) { return l.trim(); }).length; }
   var OPEN = {};   // 펼친 소제목 기억 (화면을 다시 그려도 유지)
@@ -549,11 +573,17 @@
     var prog = rows.filter(function (g) { return hasText(g.last.text) && g.last.progress !== null && g.last.progress !== undefined; }).map(function (g) { return g.last.progress; });
     var sum = function (k) { return rows.reduce(function (s, g) { return s + (+g[k].cost || 0); }, 0); };
     return { progress: prog.length ? Math.round(prog.reduce(function (a, b) { return a + b; }, 0) / prog.length) : null, progList: prog,
-      lastCost: sum("last"), nextCost: sum("next"), decCost: r && r.decision ? +r.decision.cost || 0 : 0 };
+      lastCost: sum("last"), nextCost: sum("next"), decCost: r && r.decision ? +r.decision.cost || 0 : 0, lastExtra: extraSum(rows, "last") };
   }
+  function extraSum(rows, k) {
+    var out = {};
+    rows.forEach(function (g) { var e = secTotals(parseSections(g[k].text).secs).extra; for (var w in e) out[w] = (out[w] || 0) + e[w]; });
+    return out;
+  }
+  function extraText(e) { return EXTRA_KINDS.filter(function (w) { return e && e[w]; }).map(function (w) { return " · " + w + " " + won(e[w]); }).join(""); }
   function hasContent(r) { return !!r && ((r.rows || []).some(function (g) { return hasText(g.next.text); }) || !!(r.decision && hasText(r.decision.text))); }
   function decisionLines(d) { return d && d.text ? String(d.text).split("\n").map(function (l) { return l.trim(); }).filter(Boolean) : []; }
-  function lastSumText(s) { return "평균 진행률 " + (s.progress == null ? "-" : s.progress + "%") + (s.lastCost ? " · 집행 " + won(s.lastCost) : ""); }
+  function lastSumText(s) { return "평균 진행률 " + (s.progress == null ? "-" : s.progress + "%") + (s.lastCost ? " · 집행 " + won(s.lastCost) : "") + extraText(s.lastExtra); }
 
   /* ---------- 구글 로그인 (Google Identity Services) ---------- */
   var Auth = (function () {
@@ -787,6 +817,7 @@
     var p = [];
     p.push("진행률 " + (s.progress == null ? "-" : s.progress + "%"));
     if (s.lastCost) p.push("집행 " + won(s.lastCost));
+    EXTRA_KINDS.forEach(function (w) { if (s.lastExtra && s.lastExtra[w]) p.push(w + " " + won(s.lastExtra[w])); });
     if (s.nextCost) p.push("예상 " + won(s.nextCost));
     return p.join(" · ");
   }
@@ -834,7 +865,8 @@
     return edit ? cellEditHtml(ps, sd, kind, staleWeeks, row) : cellViewHtml(ps, sd, kind, staleWeeks, row);
   }
   function chipPg(p) { return p === null || p === undefined ? "" : '<span class="pg ' + pgCls(p) + '">' + p + "%</span>"; }
-  function chipWon(c, label) { return c ? '<span class="won num" title="' + label + '">' + label + " " + won(c) + "</span>" : ""; }
+  function chipWon(c, label, ck) { return c ? '<span class="won num' + ckCls(ck) + '" title="' + label + '">' + label + " " + won(c) + "</span>" : ""; }
+  function extraChips(e) { return EXTRA_KINDS.filter(function (w) { return e && e[w]; }).map(function (w) { return chipWon(e[w], w, w); }).join(""); }
   function staleChip(w, p) { return w >= 2 && p !== null && p !== undefined && p < 100 ? '<span class="stale">' + w + "주째</span>" : ""; }
 
   function cellViewHtml(ps, sd, kind, staleWeeks, row) {
@@ -846,12 +878,12 @@
         var k = secKey(row, kind, i), n = lineCount(x.body);
         return '<div class="sec-blk' + (isOpen(k) && n ? " open" : "") + '" data-k="' + esc(k) + '"><div class="sec-hd">' +
           '<button class="sec-tg" type="button"' + (n ? "" : " disabled") + '><span class="chev">' + (n ? "▶" : "•") + '</span><span class="tt">' + esc(x.title || "(제목 없음)") + "</span>" +
-          (n ? '<span class="cnt">' + n + "줄</span>" : "") + "</button>" + chipPg(x.progress) + chipWon(x.cost, costLabel) + "</div>" +
+          (n ? '<span class="cnt">' + n + "줄</span>" : "") + "</button>" + chipPg(x.progress) + chipWon(x.cost, isExtra(x.ck) ? x.ck : costLabel, x.ck) + "</div>" +
           (n ? '<div class="sec-body"><div class="tx">' + esc(x.body) + "</div></div>" : "") + "</div>";
       }).join("") + "</div>";
     }
     var t = secTotals(ps.secs);
-    var chips = chipPg(p) + (t.hasPg ? '<span class="auto">평균</span>' : "") + chipWon(sd.cost, costLabel) + (t.hasCost ? '<span class="auto">합계</span>' : "") + staleChip(staleWeeks, p);
+    var chips = chipPg(p) + (t.hasPg ? '<span class="auto">평균</span>' : "") + chipWon(sd.cost, costLabel) + (t.hasCost && sd.cost ? '<span class="auto">합계</span>' : "") + extraChips(t.extra) + staleChip(staleWeeks, p);
     return h + (chips ? '<div class="meta-strip">' + chips + "</div>" : "");
   }
 
@@ -865,10 +897,15 @@
       '<div class="sec-tools">' +
       (x.progress !== null ? pgSelect(x.progress).replace('class="pg ', 'class="pg sec-pg ') + '<button class="sec-x" type="button" data-off="pg" title="진행률 빼기">×</button>'
         : '<button class="sec-opt" type="button" data-on="pg">+ 진행률</button>') +
-      (x.cost !== null ? '<input class="cost num sec-cost" type="text" inputmode="decimal" value="' + esc(wonInput(x.cost)) + '" placeholder="₩ ' + costLabel + '" aria-label="' + costLabel + ' 금액"><button class="sec-x" type="button" data-off="cost" title="금액 빼기">×</button>'
+      (x.cost !== null ? '<span class="ckw">' + ckSelect(x.ck, kind) + '<input class="cost num sec-cost' + ckCls(x.ck) + '" type="text" inputmode="decimal" value="' + esc(wonInput(x.cost)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액"><button class="sec-x" type="button" data-off="cost" title="금액 빼기">×</button></span>'
         : '<button class="sec-opt" type="button" data-on="cost">+ ' + costLabel + "금액</button>") +
       "</div>" +
       '<div class="sec-body"><textarea class="cell sec-body-in" rows="2" placeholder="내용 (여러 줄 가능)">' + esc(x.body) + "</textarea></div></div>";
+  }
+  function ckSelect(ck, kind) {
+    var cur = isExtra(ck) ? ck : baseWord(kind);
+    return '<select class="ck' + ckCls(ck) + '" aria-label="금액 종류" title="' + baseWord(kind) + '만 합계에 들어가고, 매출·계약은 따로 합산돼요">' +
+      COST_KINDS[kind === "next" ? "next" : "last"].map(function (w) { return '<option value="' + w + '"' + (w === cur ? " selected" : "") + ">" + w + "</option>"; }).join("") + "</select>";
   }
   function cellEditHtml(ps, sd, kind, staleWeeks, row) {
     var costLabel = kind === "last" ? "집행" : "예상";
@@ -887,7 +924,7 @@
       '<span class="lb">' + costLabel + "</span>" +
       (t.hasCost ? '<span class="won num">' + won(c) + '</span><span class="auto" title="소제목 금액 합계 (자동)">합계</span>'
         : '<input class="cost num cell-cost" type="text" inputmode="decimal" value="' + esc(wonInput(c)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액">') +
-      staleChip(staleWeeks, p);
+      extraChips(t.extra) + staleChip(staleWeeks, p);
   }
   function noteHtml(note, edit) {
     if (edit) return '<textarea class="cell note" rows="2" placeholder="비고">' + esc(note) + "</textarea>";
@@ -897,9 +934,9 @@
 
   function readSecs(cell) {
     return Array.prototype.map.call(cell.querySelectorAll(".sec-blk"), function (b) {
-      var sel = b.querySelector("select.sec-pg"), ci = b.querySelector(".sec-cost");
+      var sel = b.querySelector("select.sec-pg"), ci = b.querySelector(".sec-cost"), ks = b.querySelector("select.ck");
       return { title: b.querySelector(".sec-title").value, progress: sel && sel.value !== "" ? clampPg(sel.value) : null,
-        cost: ci ? parseWon(ci.value) : null, body: b.querySelector(".sec-body-in").value };
+        cost: ci ? parseWon(ci.value) : null, ck: ks && isExtra(ks.value) ? ks.value : null, body: b.querySelector(".sec-body-in").value };
     });
   }
   function readSide(cell, noteCell) {
@@ -992,6 +1029,11 @@
       if (extra === " sec-pg" && t.value === "") rerenderCell(t.closest(".c-last, .c-next"));
       updateSums(); markDirty();
     }
+    if (t.matches("select.ck")) {
+      var ck = isExtra(t.value) ? t.value : null, ci = t.parentNode.querySelector(".sec-cost");
+      t.className = "ck" + ckCls(ck); if (ci) ci.className = "cost num sec-cost" + ckCls(ck);
+      refreshMeta(t.closest(".c-last, .c-next")); updateSums(); markDirty();
+    }
   });
   function refreshMeta(cell) {
     if (!cell) return;
@@ -1033,7 +1075,7 @@
       var holder = document.createElement("div");
       var kind = cell.classList.contains("c-next") ? "next" : "last", k = secKey(+cell.dataset.row, kind, blks.length);
       OPEN[k] = true;
-      holder.innerHTML = secEditHtml({ title: "", progress: null, cost: null, body: "" }, kind, k);
+      holder.innerHTML = secEditHtml({ title: "", progress: null, cost: null, ck: null, body: "" }, kind, k);
       t.closest(".sec-add").before(holder.firstChild);
       var ins = cell.querySelectorAll(".sec-title"); ins[ins.length - 1].focus(); markDirty(); return;
     }
@@ -1200,7 +1242,7 @@
     var PLAN = {
       "demo1@example.com": [["경영", "분기 실적 리뷰 (예시)\n연간 계획 초안 (예시)", "분기 목표 점검 (예시)"], ["대외\n협력", "협력사 미팅 2건 (예시)", "협력사 제안 검토 (예시)"]],
       "demo2@example.com": [["운영", "월간 운영 회의 준비 (예시)", "업무 매뉴얼 정리 (예시)"], ["총무", "비품 구매 (예시)", "비품 재고 점검 (예시)"]],
-      "demo3@example.com": [["사내\n시스템", "■ 주간보고 화면 개선 (예시) · 진행 100%\n· 시안 3종 비교 (예시)\n· 사이드바 레이아웃 확정 (예시)\n\n■ 대시보드 데이터 연결 (예시) · 진행 60% · 집행 ₩120,000\n· 시트 4종 연결 (예시)\n· 차트 영역 준비 (예시)\n· 권한 점검 (예시)\n\n■ 비품 구입 (예시) · 집행 ₩85,000\n· 모니터 암 (예시)\n· 노트북 거치대 (예시)", "■ 대시보드 데이터 연결 (예시) · 진행 60%\n· 차트 마무리 (예시)\n\n■ 자동화 스크립트 정리 (예시)"], ["문서", "보고서 양식 통일 (예시)", "회의록 정리 (예시)"]],
+      "demo3@example.com": [["사내\n시스템", "■ 주간보고 화면 개선 (예시) · 진행 100%\n· 시안 3종 비교 (예시)\n· 사이드바 레이아웃 확정 (예시)\n\n■ 대시보드 데이터 연결 (예시) · 진행 60% · 집행 ₩120,000\n· 시트 4종 연결 (예시)\n· 차트 영역 준비 (예시)\n· 권한 점검 (예시)\n\n■ 비품 구입 (예시) · 집행 ₩85,000\n· 모니터 암 (예시)\n· 노트북 거치대 (예시)\n\n■ 세금계산서 발행 (예시) · 진행 100% · 매출 ₩3,300,000\n· 가상 거래처 2건 (예시)\n\n■ 용역 계약 체결 (예시) · 진행 100% · 계약 ₩9,000,000\n· 가상 거래처 (예시)", "■ 대시보드 데이터 연결 (예시) · 진행 60%\n· 차트 마무리 (예시)\n\n■ 자동화 스크립트 정리 (예시)"], ["문서", "보고서 양식 통일 (예시)", "회의록 정리 (예시)"]],
       "demo4@example.com": [["사업", "고객 인터뷰 3건 (예시)", "시장 조사 (예시)"], ["교육", "설명회 자료 준비 (예시)", "교육 일정 수립 (예시)"]],
       "demo5@example.com": [["영업", "견적서 회신 받기 (예시)\n신규 리드 연락 (예시)", "견적서 회신 받기 (예시)\n전시회 참가 신청 (예시)"], ["제안", "제안서 전달 (예시)", "제안 미팅 (예시)"]],
       "demo6@example.com": [["개발", "■ 결제 기능 연동 (예시) · 진행 70%\n· 테스트 결제 확인 (예시)\n· 환불 처리 남음 (예시)\n\n■ PDF 출력 개선 (예시) · 진행 100%\n· 글꼴 깨짐 수정 (예시)", "■ 결제 기능 연동 (예시) · 진행 70%\n· 환불 처리 (예시)"], ["품질", "테스트 케이스 확장 (예시)", "배포 점검 (예시)"]]
