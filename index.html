@@ -106,6 +106,8 @@
   .weeknav select { border: 0; background: transparent; font-weight: 700; font-size: 17px; color: var(--text); padding: 0 2px; cursor: pointer; max-width: 230px; }
   .weekrange { color: var(--muted); font-size: 13px; }
   .spacer { flex: 1; }
+  .daily-link { margin-left: auto; text-decoration: none !important; color: var(--text); }
+  .daily-link + .help-btn { margin-left: 8px; }
   .pill { font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 4px; white-space: nowrap; display: inline-block; }
   .pill.ok { background: var(--green-soft); color: var(--green); }
   .pill.warn { background: var(--orange-soft); color: var(--orange); }
@@ -370,6 +372,7 @@
       </div>
       <span class="weekrange" id="weekRange"></span>
       <span id="curPill"></span>
+      <a class="btn daily-link" id="dailyLink" href="daily.html" title="일일업무 페이지로">📝 일일업무</a>
       <button class="help-btn" id="helpBtn" type="button" aria-label="사용법 보기" title="사용법 보기">?</button>
     </header>
     <div class="content">
@@ -441,6 +444,7 @@
   var TZ = "Asia/Seoul", WD = ["일", "월", "화", "수", "목", "금", "토"];
   var CFG = window.PLAB_CONFIG || {};
   var isPreview = !CFG.APPS_SCRIPT_URL || !CFG.GOOGLE_CLIENT_ID || /[?&]demo\b/.test(location.search);
+  if (/[?&]demo\b/.test(location.search)) { var dl = document.getElementById("dailyLink"); if (dl) dl.href = "daily.html?demo"; }
   var state = { boot: null, week: null, sel: null, statuses: {}, cur: null, dirty: false, saving: false };
   /* 보고서 캐시 (2분)
      1) 첫 화면: 내 보고서만 받아 바로 표시  2) 뒤에서 그 주 6명을 받아 둠 → 팀원을 누르면 바로 표시

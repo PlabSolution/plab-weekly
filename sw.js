@@ -3,7 +3,7 @@
  * - 아이콘·매니페스트만 캐시
  * - 보고서 데이터(Apps Script)·구글 로그인·폰트 등 다른 주소 요청은 건드리지 않음 (보고서 내용은 기기에 저장하지 않음)
  */
-const CACHE = 'plab-weekly-v2';
+const CACHE = 'plab-weekly-v3';
 const SHELL = ['./', './manifest.webmanifest', './icons/icon-192-v2.png', './icons/icon-512-v2.png', './icons/apple-touch-icon-v2.png'];
 
 self.addEventListener('install', (e) => {
@@ -27,8 +27,8 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {                           // 화면: 네트워크 우선
     e.respondWith(
       fetch(req)
-        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./', copy)); return res; })
-        .catch(() => caches.match('./'))
+        .then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(url.pathname, copy)); return res; })   // 주간보고·일일업무 화면을 각각 저장
+        .catch(() => caches.match(url.pathname).then((hit) => hit || caches.match('./')))
     );
     return;
   }
