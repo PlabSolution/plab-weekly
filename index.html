@@ -149,6 +149,13 @@
   .rt .c-cat { background: var(--surface-2); padding: 10px 12px; position: relative; }
   .rt .c-last, .rt .c-next, .rt .c-lnote, .rt .c-nnote, .rt .c-dec { padding: 8px 10px 10px; }
   .rt .c-lnote, .rt .c-nnote { background: color-mix(in srgb, var(--surface-2) 45%, var(--surface)); }
+  /* 비고 접기: 비고 칸을 숨기고 과업 두 칸을 반씩 (숨긴 칸도 화면에 남아 있어 저장에는 그대로 들어감) */
+  .rt.no-note { grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1fr); }
+  .rt.no-note > .h.note, .rt.no-note > .c-lnote, .rt.no-note > .c-nnote { display: none; }
+  .rt.no-note > .c-last, .rt.no-note > .h:nth-child(2) { border-right: 1px solid var(--line); }
+  .rt.no-note > .c-next, .rt.no-note > .h:nth-child(4) { border-right: 0; }
+  .rt.no-note .c-dec { grid-column: 2 / 4; }
+  .rt.no-note .c-cat[data-note]::after { content: "비고 있음"; display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 700; color: var(--text-2); background: var(--surface-3); border-radius: 4px; padding: 1px 6px; cursor: pointer; }
   .cat-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; white-space: pre-line; }
   textarea.cat-in { width: 100%; font-weight: 700; font-size: 14px; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 3px 6px; margin: -3px -6px; outline: none; resize: none; overflow: hidden; line-height: 1.45; }
   textarea.cat-in:hover { border-color: var(--line); background: var(--surface); }
@@ -569,6 +576,7 @@
   function lineCount(t) { return String(t || "").split("\n").filter(function (l) { return l.trim(); }).length; }
   var OPEN = {};   // 펼친 소제목 기억 (화면을 다시 그려도 유지)
   var ALL_OPEN = false;
+  var NOTES_HIDDEN = store("plab-weekly-notes-hidden") === true;   // 비고 접기 (이 브라우저에 기억)
 
   function sideEmpty() { return { text: "", progress: null, cost: 0, note: "" }; }
   function hasText(s) { return !!String(s || "").trim(); }
@@ -806,11 +814,12 @@
     var meta = '<span class="pill ' + (ok ? "ok" : "warn") + '" id="subPill">' + (ok ? "제출" : "미작성") + "</span>" +
       '<span id="whoStats">' + whoStats(s) + "</span>" +
       (r.updatedAt ? "<span>· 최종 저장 " + esc(r.updatedAt) + "</span>" : "");
-    var acts = '<div class="acts"><button class="btn" type="button" id="toggleAll">' + (ALL_OPEN ? "소제목 모두 접기" : "소제목 모두 펼치기") + "</button>" + (!edit && c.fileUrl ? '<a class="btn" href="' + esc(c.fileUrl) + '" target="_blank" rel="noopener">시트 열기 ↗</a>' : "") + "</div>";
+    var acts = '<div class="acts"><button class="btn" type="button" id="toggleNotes"></button><button class="btn" type="button" id="toggleAll">' + (ALL_OPEN ? "소제목 모두 접기" : "소제목 모두 펼치기") + "</button>" + (!edit && c.fileUrl ? '<a class="btn" href="' + esc(c.fileUrl) + '" target="_blank" rel="noopener">시트 열기 ↗</a>' : "") + "</div>";
     $("app").innerHTML = whoHtml(m, meta) + acts + "</div>" + tableHtml(r, edit) +
       (edit ? '<div class="table-acts"><button class="btn" type="button" id="addRow">+ 업무 구분 추가</button>' +
         '<span class="hint">■ 소제목을 누르면 펼쳐짐 · 소제목마다 진행률/금액을 넣으면 업무구분 진행률(평균)·금액(합계)이 자동 계산 · 금액은 "30만", "1.2억", "300000" 모두 입력 가능 · Ctrl+S 저장</span></div>' : "");
     $("savebar").hidden = !edit;
+    refreshNotes();
     if (edit) {
       $("sheetLink").hidden = !c.fileUrl; if (c.fileUrl) $("sheetLink").href = c.fileUrl;
       setSaveStatus();
@@ -829,7 +838,7 @@
   function tableHtml(r, edit) {
     var w = weekObj(state.week), pw = state.cur.prevWeek || { start: addD(w.start, -7), end: addD(w.end, -7) };
     var stale = state.cur.stale || {}, s = stats(r);
-    var h = '<div class="rt" id="rt">' +
+    var h = '<div class="rt' + (NOTES_HIDDEN ? " no-note" : "") + '" id="rt">' +
       '<div class="h">업무구분</div>' +
       '<div class="h">지난주 과업 <small>' + mdShort(pw.start) + "~" + mdShort(pw.end) + '</small><span class="sum" id="sumLast">' + lastSumText(s) + "</span></div>" +
       '<div class="h note">비고</div>' +
@@ -929,6 +938,27 @@
       (t.hasCost ? '<span class="won num">' + won(c) + '</span><span class="auto" title="소제목 금액 합계 (자동)">합계</span>'
         : '<input class="cost num cell-cost" type="text" inputmode="decimal" value="' + esc(wonInput(c)) + '" placeholder="₩ 금액" aria-label="' + costLabel + ' 금액">') +
       extraChips(t.extra) + staleChip(staleWeeks, p);
+  }
+  /* 비고 접기 버튼 글자 + 비고가 있는 업무구분 표시 (접혀 있을 때 '비고 있음') */
+  function refreshNotes() {
+    var rt = $("rt"), btn = $("toggleNotes");
+    if (!rt || !btn) return;
+    var n = 0;
+    Array.prototype.forEach.call(rt.querySelectorAll(".c-cat"), function (c) {
+      var i = c.dataset.row, has = false;
+      Array.prototype.forEach.call(rt.querySelectorAll('.c-lnote[data-row="' + i + '"], .c-nnote[data-row="' + i + '"]'), function (x) {
+        var ta = x.querySelector("textarea"), txt = ta ? ta.value : x.textContent;
+        if (String(txt || "").trim()) { has = true; n++; }
+      });
+      if (has) c.setAttribute("data-note", ""); else c.removeAttribute("data-note");
+    });
+    rt.classList.toggle("no-note", NOTES_HIDDEN);
+    btn.textContent = NOTES_HIDDEN ? "비고 펼치기" + (n ? " (" + n + ")" : "") : "비고 접기";
+    btn.title = NOTES_HIDDEN ? "숨긴 비고 칸을 다시 보여줘요" : "비고 칸을 숨기고 과업 칸을 넓게 봐요 (이 브라우저에 기억)";
+  }
+  function setNotesHidden(v) {
+    NOTES_HIDDEN = v; store("plab-weekly-notes-hidden", v); refreshNotes();
+    Array.prototype.forEach.call(document.querySelectorAll(".rt textarea"), autosize);
   }
   function noteHtml(note, edit) {
     if (edit) return '<textarea class="cell note" rows="2" placeholder="비고">' + esc(note) + "</textarea>";
@@ -1060,6 +1090,8 @@
   app.addEventListener("click", function (e) {
     var t = e.target;
     var g = t.closest("[data-go]"); if (g) { select(g.dataset.go); return; }
+    if (t.closest("#toggleNotes")) { setNotesHidden(!NOTES_HIDDEN); return; }
+    if (NOTES_HIDDEN && t.closest(".rt.no-note .c-cat[data-note]") && !t.closest("textarea, button")) { setNotesHidden(false); return; }
     if (t.closest("#toggleAll")) {
       ALL_OPEN = !ALL_OPEN; if (!ALL_OPEN) OPEN = {};
       Array.prototype.forEach.call(document.querySelectorAll(".rt .sec-blk"), function (b) { if (b.querySelector(".sec-body")) b.classList.toggle("open", ALL_OPEN); });
@@ -1366,7 +1398,7 @@
         { el: "#rt .c-cat", when: hasTable, title: "업무구분", body: "시트의 업무구분(B열)과 같아요." + (canEdit ? " 아래 <b>+ 업무 구분 추가</b>로 새 구분을 만들 수 있어요." : "") },
         { el: "#rt .c-last", when: hasTable, title: "지난주 과업 · ■ 소제목", body: "한 일을 적는 칸이에요. <b>■ 소제목</b>으로 묶으면 화면에서는 제목만 보이고 누르면 펼쳐져요.<br>" + (canEdit ? "<b>+ ■ 소제목 추가</b>를 누르거나, 줄 맨 앞에 ■를 쓰면 자동으로 묶여요." : "") },
         { el: canEdit ? "#rt .c-last .cell-meta" : "#rt .c-last .meta-strip", when: hasTable, title: "진행률 · 금액", body: "소제목마다 <b>+ 진행률 / + 집행금액</b>을 켜서 넣을 수 있어요. 넣으면 업무구분 전체 진행률은 <b>평균</b>, 금액은 <b>합계</b>로 자동 계산돼요.<br>금액은 <kbd>30만</kbd> <kbd>1.2억</kbd> <kbd>300000</kbd> 모두 돼요." },
-        { el: "#rt .c-lnote", when: hasTable, title: "비고", body: "과업 옆 비고 칸은 시트의 comment 열로 저장돼요. 참고 사항이나 이슈를 짧게 적어요." },
+        { el: "#rt .c-lnote", when: hasTable && !NOTES_HIDDEN, title: "비고", body: "과업 옆 비고 칸은 시트의 comment 열로 저장돼요. 참고 사항이나 이슈를 짧게 적어요." },
         { el: "#rt .c-next", when: hasTable, title: "이번주 과업", body: "다음 주에 할 일과 <b>예상 비용</b>을 적어요. 다음 보고서를 만들 때 여기 적은 내용이 '지난주 과업'으로 넘어가요." },
         { el: "#rt .c-dec-h", when: hasTable, title: "대표님 결정 필요", body: "승인·판단이 필요한 일과 금액을 한 줄에 하나씩 적어요. 전체 현황과 월요일 슬랙 요약에 모아서 보여드려요." },
         { el: "#saveBtn", when: canEdit, title: "저장", body: "<b>저장</b> 또는 <kbd>Ctrl</kbd>+<kbd>S</kbd>. 바로 시트에 반영돼요.<br>그사이 시트에서 누가 고쳤다면 덮어쓰지 않고 알려드려요. 금요일 15시까지 안 쓰면 슬랙으로 알림이 가요." },
