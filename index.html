@@ -115,7 +115,7 @@
   .pill.n { background: var(--surface-3); color: var(--text-2); }
   .pill.cur { background: var(--accent-soft); color: var(--accent); }
 
-  .content { padding: 18px 24px 120px; max-width: 1280px; }
+  .content { padding: 18px 24px 120px; max-width: 1760px; }
   .banner { margin-bottom: 14px; padding: 8px 12px; border-radius: 8px; font-size: 13px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--line); display: flex; gap: 6px 12px; align-items: center; flex-wrap: wrap; }
   .banner b { color: var(--text); }
   .banner select { font-size: 13px; border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; background: var(--surface); color: var(--text); }
@@ -138,7 +138,7 @@
   .who .acts { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 
   /* ===== Report table — 시트와 같은 모양: 구분 | 지난주 과업 | 비고 | 이번주 과업 | 비고 ===== */
-  .rt { display: grid; grid-template-columns: 140px minmax(0, 1.35fr) minmax(0, .8fr) minmax(0, 1.35fr) minmax(0, .8fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+  .rt { display: grid; grid-template-columns: 120px minmax(0, 2fr) minmax(120px, .6fr) minmax(0, 2fr) minmax(120px, .6fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
   .rt > div { border-top: 1px solid var(--line); border-right: 1px solid var(--line-2); min-width: 0; }
   .rt > div.c-nnote, .rt > div.c-dec, .rt > .h:nth-child(5) { border-right: 0; }
   .rt > .c-lnote { border-right: 1px solid var(--line); }
@@ -299,7 +299,7 @@
 
   /* save bar */
   .savebar { position: fixed; left: 248px; right: 0; bottom: 0; z-index: 25; padding: 0 24px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, var(--bg) 30%); }
-  .savebar .in { max-width: 1232px; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 -4px 20px rgba(0,0,0,.05); }
+  .savebar .in { max-width: 1712px; display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 -4px 20px rgba(0,0,0,.05); }
   .savebar .status { font-size: 13px; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
   .savebar .status.dirty { color: var(--orange); }
 
