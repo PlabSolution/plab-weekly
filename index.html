@@ -242,6 +242,8 @@
   .sec-add { margin-top: 2px; align-self: flex-start; border: 0; background: transparent; color: var(--accent); font-size: 12.5px; cursor: pointer; padding: 2px 6px; font-weight: 600; }
   .sec-add:hover { text-decoration: underline; }
   textarea.cell.pre { min-height: 40px; }
+  .secs + textarea.cell.pre { margin-top: 6px; }
+  .tx.pre-after { margin-top: 6px; }
   .auto { font-size: 11px; color: var(--muted); }
   /* ===== 사용법 안내 (투어) ===== */
   .help-btn { margin-left: auto; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--text-2); font-weight: 700; font-size: 14px; cursor: pointer; flex: none; }
@@ -885,7 +887,7 @@
   function cellViewHtml(ps, sd, kind, staleWeeks, row) {
     var costLabel = kind === "last" ? "집행" : "예상", p = sd.progress === undefined ? null : sd.progress;
     if (!hasText(sd.text) && p === null && !sd.cost) return '<div class="cell-empty">-</div>';
-    var h = hasText(ps.pre) ? '<div class="tx">' + esc(ps.pre) + "</div>" : "";
+    var h = "";
     if (ps.secs.length) {
       h += '<div class="secs">' + ps.secs.map(function (x, i) {
         var k = secKey(row, kind, i), n = lineCount(x.body);
@@ -895,6 +897,7 @@
           (n ? '<div class="sec-body"><div class="tx">' + esc(x.body) + "</div></div>" : "") + "</div>";
       }).join("") + "</div>";
     }
+    if (hasText(ps.pre)) h += '<div class="tx' + (ps.secs.length ? " pre-after" : "") + '">' + esc(ps.pre) + "</div>";
     var t = secTotals(ps.secs);
     var chips = chipPg(p) + (t.hasPg ? '<span class="auto">평균</span>' : "") + chipWon(sd.cost, costLabel) + (t.hasCost && sd.cost ? '<span class="auto">합계</span>' : "") + extraChips(t.extra) + staleChip(staleWeeks, p);
     return h + (chips ? '<div class="meta-strip">' + chips + "</div>" : "");
@@ -922,11 +925,11 @@
   }
   function cellEditHtml(ps, sd, kind, staleWeeks, row) {
     var costLabel = kind === "last" ? "집행" : "예상";
-    var h = "";
+    /* 화면 순서: ■ 소제목 카드 → + 소제목 추가 → 자유 입력칸 (시트에는 기존처럼 자유 입력 → 소제목 순으로 저장) */
+    var h = '<div class="secs">' + ps.secs.map(function (x, i) { return secEditHtml(x, kind, secKey(row, kind, i)); }).join("") +
+      '<button class="sec-add" type="button">+ ■ 소제목 추가</button></div>';
     if (hasText(ps.pre) || !ps.secs.length)
       h += '<textarea class="cell pre" rows="' + (ps.secs.length ? 2 : 3) + '" placeholder="' + (kind === "last" ? "지난주에 진행한 일 (여러 줄 가능)" : "이번주에 할 일 (여러 줄 가능)") + '">' + esc(ps.pre) + "</textarea>";
-    h += '<div class="secs">' + ps.secs.map(function (x, i) { return secEditHtml(x, kind, secKey(row, kind, i)); }).join("") +
-      '<button class="sec-add" type="button">+ ■ 소제목 추가</button></div>';
     return h + '<div class="meta-strip cell-meta">' + metaHtml(ps, sd, kind, staleWeeks) + "</div>";
   }
   function metaHtml(ps, sd, kind, staleWeeks) {
